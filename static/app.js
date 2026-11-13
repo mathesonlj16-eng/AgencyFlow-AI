@@ -253,6 +253,7 @@ async function analyze() {
   const brief = el('brief').value.trim(), client_name = el('client').value.trim();
   if (brief.length < 30) { message('Add at least 30 characters of brief details.'); return; }
   if ((dirty || window.AgencyFlowCampaignContext?.isDirty()) && !confirm('You have unsaved edits on the current plan. Discard them?')) return;
+  window.AgencyFlowCampaignContext?.discardPending();
   const button = el('analyzeBtn'); button.disabled = true;
   const started = Date.now();
   const tick = () => { el('analyzeText').textContent = `Local AI is drafting… ${Math.round((Date.now() - started) / 1000)}s`; };
