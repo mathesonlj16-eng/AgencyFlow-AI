@@ -2,31 +2,46 @@
 
 Run: uvicorn app:app --host 127.0.0.1 --port 8766
 Requires Python 3.11+. Do not expose publicly without DEMO_ACCESS_CODE.
+
+Run lifecycle:  review -> approved -> sending -> sent
+                                  ^-----------'  (send failed: back to approved, retry allowed)
 """
 from __future__ import annotations
 
 import hashlib
-from contextlib import contextmanager
 import json
 import os
+import re
+import secrets
+import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-import sqlite3
 from typing import Any
-from urllib.request import Request as URLRequest, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import Request as URLRequest, urlopen
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from ai_client import ModelError, generate_plan
-from plan import Plan
+from ai_client import ModelError, generate_plan, provider_settings
+from plan import Plan, schedule_tasks
 
 BASE = Path(__file__).resolve().parent
 DB = Path(os.getenv("DB_PATH", str(BASE / "data" / "agencyflow.sqlite3")))
-app = FastAPI(title="AgencyFlow AI", version="0.1.0", docs_url=None, redoc_url=None)
+SCHEMA_VERSION = "agencyflow.v1"
+app = FastAPI(title="AgencyFlow AI", version="0.2.0", docs_url=None, redoc_url=None)
+
+RUN_COLUMNS = {  # added after v0.1; migrated in place on startup
+    "model": "TEXT", "attempts": "INTEGER", "latency_ms": "INTEGER",
+    "handoff_attempts": "INTEGER NOT NULL DEFAULT 0", "last_error": "TEXT", "handoff_response": "TEXT",
+    "sending_since": "TEXT",
+}
+STALE_SENDING_SECONDS = 120  # a 'sending' claim older than this (e.g. server crashed mid-send) may be retried
 
 
 def utcnow() -> str:
@@ -51,6 +66,19 @@ def connect():
         approved_at TEXT,
         sent_at TEXT
     )""")
+    existing = {r["name"] for r in db.execute("PRAGMA table_info(runs)")}
+    for column, ddl in RUN_COLUMNS.items():
+        if column not in existing:
+            db.execute(f"ALTER TABLE runs ADD COLUMN {column} {ddl}")
+    # Append-only audit trail, including failures that never produced a run.
+    db.execute("""CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id INTEGER,
+        intake_key TEXT,
+        kind TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+    )""")
     db.commit()
     try:
         yield db
@@ -62,19 +90,35 @@ def connect():
         db.close()
 
 
+def log_event(db: sqlite3.Connection, kind: str, detail: str = "", run_id: int | None = None, intake_key: str | None = None):
+    db.execute("INSERT INTO events(run_id,intake_key,kind,detail,created_at) VALUES (?,?,?,?,?)",
+               (run_id, intake_key, kind, detail[:1000], utcnow()))
+
+
 def check_code(code: str | None):
     required = os.getenv("DEMO_ACCESS_CODE", "")
-    if required:
-        import secrets
-        if not code or not secrets.compare_digest(code, required):
-            raise HTTPException(status_code=401, detail="Enter the demo access code to use this workspace.")
+    if required and (not code or not secrets.compare_digest(code, required)):
+        raise HTTPException(status_code=401, detail="Enter the demo access code to use this workspace.")
+
+
+def event_id(run: dict[str, Any]) -> str:
+    """Stable per run: the same approved plan always carries the same event id."""
+    return f"af-{run['id']}-{run['intake_key'][:12]}"
 
 
 def run_obj(row: sqlite3.Row) -> dict[str, Any]:
+    keys = row.keys()
     return {"id": row["id"], "client_name": row["client_name"], "brief": row["brief"],
             "plan": json.loads(row["plan_json"]), "status": row["status"],
-            "created_at": row["created_at"], "approved_at": row["approved_at"],
-            "sent_at": row["sent_at"], "intake_key": row["intake_key"]}
+            "created_at": row["created_at"], "approved_at": row["approved_at"], "sent_at": row["sent_at"],
+            "intake_key": row["intake_key"],
+            "model": row["model"] if "model" in keys else None,
+            "attempts": row["attempts"] if "attempts" in keys else None,
+            "latency_ms": row["latency_ms"] if "latency_ms" in keys else None,
+            "handoff_attempts": row["handoff_attempts"] if "handoff_attempts" in keys else 0,
+            "last_error": row["last_error"] if "last_error" in keys else None,
+            "event_id": f"af-{row['id']}-{row['intake_key'][:12]}",
+            "handoff_response": json.loads(row["handoff_response"]) if "handoff_response" in keys and row["handoff_response"] else None}
 
 
 def get_run(run_id: int) -> dict[str, Any]:
@@ -85,6 +129,18 @@ def get_run(run_id: int) -> dict[str, Any]:
     return run_obj(row)
 
 
+def intake_key(brief: str, client: str) -> str:
+    """Duplicate detection that ignores case and whitespace differences."""
+    norm = lambda s: re.sub(r"\s+", " ", s).strip().casefold()
+    normalized = json.dumps([norm(brief), norm(client)], ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def handoff_payload(run: dict[str, Any]) -> dict[str, Any]:
+    return {"schema_version": SCHEMA_VERSION, "event_id": event_id(run), "run_id": run["id"],
+            "reviewed_at": run["approved_at"], "client_name": run["client_name"], "plan": run["plan"]}
+
+
 class Intake(BaseModel):
     client_name: str = Field(default="", max_length=100)
     brief: str = Field(min_length=30, max_length=6000)
@@ -92,11 +148,25 @@ class Intake(BaseModel):
 
 @app.get("/api/config")
 def config():
-    provider = os.getenv("AI_PROVIDER", "ollama").lower()
-    return {"provider": provider,
-            "model": os.getenv("OLLAMA_MODEL", "qwen3.5:2b") if provider == "ollama" else os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+    provider, model = provider_settings()
+    return {"provider": provider, "model": model,
             "handoff_enabled": bool(os.getenv("N8N_WEBHOOK_URL")),
             "access_code_required": bool(os.getenv("DEMO_ACCESS_CODE"))}
+
+
+@app.get("/api/health")
+def health():
+    """Reports whether the configured model is actually available (no inference is run)."""
+    provider, model = provider_settings()
+    if provider != "ollama":
+        return {"provider": provider, "model": model, "model_available": None}
+    base = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/chat").rsplit("/api/", 1)[0]
+    try:
+        with urlopen(base + "/api/tags", timeout=3) as response:
+            names = {m.get("name") for m in json.loads(response.read()).get("models", [])}
+        return {"provider": provider, "model": model, "model_available": model in names or f"{model}:latest" in names}
+    except (URLError, OSError, ValueError):
+        return {"provider": provider, "model": model, "model_available": False, "detail": "Ollama is not reachable"}
 
 
 @app.post("/api/analyze")
@@ -106,22 +176,31 @@ def analyze(intake: Intake, x_demo_code: str | None = Header(default=None)):
     client = intake.client_name.strip()
     if len(brief) < 30:
         raise HTTPException(422, "Brief must be at least 30 characters")
-    normalized = json.dumps([brief, client], ensure_ascii=False, separators=(",", ":"))
-    key = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    key = intake_key(brief, client)
     with connect() as db:
         existing = db.execute("SELECT * FROM runs WHERE intake_key=?", (key,)).fetchone()
+        if existing:
+            log_event(db, "duplicate_reused", "Same brief and client; returned the saved plan without calling the model.", existing["id"], key)
     if existing:
         return {"run": run_obj(existing), "reused": True}
     try:
-        plan = generate_plan(brief, client)
+        generation = generate_plan(brief, client)
     except ModelError as exc:
+        with connect() as db:
+            log_event(db, "generation_failed", str(exc), None, key)
         raise HTTPException(503, detail=str(exc)) from exc
+    plan = schedule_tasks(generation.plan)
     with connect() as db:
-        db.execute("INSERT OR IGNORE INTO runs(intake_key,client_name,brief,plan_json,created_at) VALUES (?,?,?,?,?)",
-                   (key, client, brief, plan.model_dump_json(), utcnow()))
-        db.commit()
+        # INSERT OR IGNORE: if a concurrent identical request won the race, keep its row.
+        cur = db.execute("""INSERT OR IGNORE INTO runs(intake_key,client_name,brief,plan_json,created_at,model,attempts,latency_ms)
+                            VALUES (?,?,?,?,?,?,?,?)""",
+                         (key, client, brief, plan.model_dump_json(), utcnow(), generation.model, generation.attempts, generation.latency_ms))
         row = db.execute("SELECT * FROM runs WHERE intake_key=?", (key,)).fetchone()
-    return {"run": run_obj(row), "reused": False}
+        if cur.rowcount:
+            for err in generation.errors:
+                log_event(db, "model_output_repaired", err, row["id"], key)
+            log_event(db, "generated", f"{generation.provider}/{generation.model}, attempt {generation.attempts}, {generation.latency_ms} ms", row["id"], key)
+    return {"run": run_obj(row), "reused": not cur.rowcount}
 
 
 @app.get("/api/runs")
@@ -132,13 +211,31 @@ def list_runs(x_demo_code: str | None = Header(default=None)):
     return {"runs": [run_obj(r) for r in rows]}
 
 
+@app.get("/api/runs/{run_id}")
+def read_run(run_id: int, x_demo_code: str | None = Header(default=None)):
+    check_code(x_demo_code)
+    return {"run": get_run(run_id)}
+
+
+@app.get("/api/runs/{run_id}/events")
+def run_events(run_id: int, x_demo_code: str | None = Header(default=None)):
+    check_code(x_demo_code)
+    run = get_run(run_id)
+    with connect() as db:
+        rows = db.execute("SELECT kind,detail,created_at FROM events WHERE run_id=? OR (run_id IS NULL AND intake_key=?) ORDER BY id",
+                          (run_id, run["intake_key"])).fetchall()
+    return {"events": [dict(r) for r in rows]}
+
+
 @app.put("/api/runs/{run_id}/plan")
 def edit_plan(run_id: int, plan: Plan, x_demo_code: str | None = Header(default=None)):
     check_code(x_demo_code)
+    plan = schedule_tasks(plan)
     with connect() as db:
         changed = db.execute("UPDATE runs SET plan_json=? WHERE id=? AND status='review'",
                              (plan.model_dump_json(), run_id)).rowcount
-        db.commit()
+        if changed:
+            log_event(db, "edited", f"{len(plan.tasks)} tasks, deadline {plan.deadline or 'unconfirmed'}", run_id)
     if not changed:
         get_run(run_id)
         raise HTTPException(409, "Only unapproved plans can be edited")
@@ -151,9 +248,10 @@ def approve(run_id: int, x_demo_code: str | None = Header(default=None)):
     with connect() as db:
         changed = db.execute("UPDATE runs SET status='approved', approved_at=? WHERE id=? AND status='review'",
                              (utcnow(), run_id)).rowcount
-        db.commit()
+        if changed:
+            log_event(db, "approved", "Human approval recorded; plan is now locked.", run_id)
     run = get_run(run_id)
-    if not changed and run["status"] not in ("approved", "sent"):
+    if not changed and run["status"] == "review":
         raise HTTPException(409, "Run cannot be approved")
     return {"run": run}
 
@@ -164,39 +262,70 @@ def export(run_id: int, x_demo_code: str | None = Header(default=None)):
     run = get_run(run_id)
     if run["status"] == "review":
         raise HTTPException(409, "Approve this plan before exporting")
-    return {"schema_version": "agencyflow.v1", "event_id": f"af-{run['id']}-{run['intake_key'][:12]}",
-            "reviewed_at": run["approved_at"], "client_name": run["client_name"], "plan": run["plan"]}
+    return handoff_payload(run)
+
+
+def _validated_webhook() -> str:
+    webhook = os.getenv("N8N_WEBHOOK_URL", "")
+    if not webhook:
+        raise HTTPException(409, "Configure N8N_WEBHOOK_URL before sending")
+    parsed = urlsplit(webhook)
+    if parsed.scheme not in ("https", "http") or not parsed.netloc or (
+            parsed.scheme == "http" and parsed.hostname not in ("localhost", "127.0.0.1")):
+        raise HTTPException(500, "Webhook must use HTTPS, or HTTP on localhost")
+    return webhook
 
 
 @app.post("/api/runs/{run_id}/handoff")
 def handoff(run_id: int, x_demo_code: str | None = Header(default=None)):
     check_code(x_demo_code)
-    webhook = os.getenv("N8N_WEBHOOK_URL", "")
-    if not webhook:
-        raise HTTPException(409, "Configure N8N_WEBHOOK_URL before sending")
-    from urllib.parse import urlsplit
-    parsed = urlsplit(webhook)
-    if parsed.scheme not in ("https", "http") or not parsed.netloc or (parsed.scheme == "http" and parsed.hostname not in ("localhost", "127.0.0.1")):
-        raise HTTPException(500, "Webhook must use HTTPS, or HTTP on localhost")
+    webhook = _validated_webhook()
     run = get_run(run_id)
     if run["status"] == "sent":
+        with connect() as db:
+            log_event(db, "handoff_replay_blocked", "Already delivered; no request sent.", run_id)
         return {"run": run, "reused": True}
-    if run["status"] != "approved":
+    if run["status"] == "review":
         raise HTTPException(409, "Review and approve before handoff")
-    payload = {"schema_version": "agencyflow.v1", "event_id": f"af-{run['id']}-{run['intake_key'][:12]}",
-               "reviewed_at": run["approved_at"], "client_name": run["client_name"], "plan": run["plan"]}
-    request = URLRequest(webhook, data=json.dumps(payload).encode("utf-8"),
-                         headers={"Content-Type": "application/json"}, method="POST")
-    try:
-        with urlopen(request, timeout=12) as response:
-            if not 200 <= response.status < 300:
-                raise HTTPException(502, "n8n did not accept this handoff")
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        raise HTTPException(502, "n8n handoff failed; no sent status was recorded. Check the workflow and retry manually.") from exc
+    # Claim the run so two clicks or tabs cannot send concurrently. A stale claim left by a
+    # crash can be re-claimed; the receiver de-duplicates by event_id, so a resend is safe.
+    stale_before = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() - STALE_SENDING_SECONDS, timezone.utc).isoformat(timespec="seconds")
     with connect() as db:
-        db.execute("UPDATE runs SET status='sent', sent_at=? WHERE id=? AND status='approved'", (utcnow(), run_id))
-        db.commit()
-    return {"run": get_run(run_id), "reused": False}
+        claimed = db.execute("""UPDATE runs SET status='sending', sending_since=?, handoff_attempts=handoff_attempts+1
+                                WHERE id=? AND (status='approved' OR (status='sending' AND sending_since < ?))""",
+                             (utcnow(), run_id, stale_before)).rowcount
+    if not claimed:
+        raise HTTPException(409, "A handoff for this plan is already in progress")
+    payload = handoff_payload(run)
+    request = URLRequest(webhook, data=json.dumps(payload).encode("utf-8"),
+                         headers={"Content-Type": "application/json", "Idempotency-Key": payload["event_id"]}, method="POST")
+    try:
+        with urlopen(request, timeout=int(os.getenv("HANDOFF_TIMEOUT", "15"))) as response:
+            if not 200 <= response.status < 300:
+                raise HTTPError(webhook, response.status, "non-2xx", response.headers, None)
+            body = response.read(100_000)
+        try:
+            ack = json.loads(body) if body else {}
+        except ValueError:
+            ack = {"raw": body[:500].decode("utf-8", "replace")}
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        if isinstance(exc, HTTPError):
+            try:
+                reason = json.loads(exc.read() or b"{}").get("error") or f"HTTP {exc.code}"
+            except Exception:
+                reason = f"HTTP {exc.code}"
+            message = f"n8n rejected the handoff ({reason})."
+        else:
+            message = "n8n could not be reached."
+        with connect() as db:
+            db.execute("UPDATE runs SET status='approved', last_error=? WHERE id=? AND status='sending'", (message, run_id))
+            log_event(db, "handoff_failed", message, run_id)
+        raise HTTPException(502, f"{message} Plan stays approved; nothing was marked sent. Retry when n8n is available.") from exc
+    with connect() as db:
+        db.execute("UPDATE runs SET status='sent', sent_at=?, last_error=NULL, handoff_response=? WHERE id=? AND status='sending'",
+                   (utcnow(), json.dumps(ack)[:5000], run_id))
+        log_event(db, "handoff_sent", f"n8n acknowledged {payload['event_id']}" + (" (receiver reported duplicate)" if ack.get("duplicate") else ""), run_id)
+    return {"run": get_run(run_id), "reused": False, "ack": ack}
 
 
 app.mount("/assets", StaticFiles(directory=BASE / "static"), name="assets")
@@ -205,6 +334,13 @@ app.mount("/assets", StaticFiles(directory=BASE / "static"), name="assets")
 @app.get("/")
 def index():
     return FileResponse(BASE / "static" / "index.html")
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(_request: Request, exc: RequestValidationError):
+    first = exc.errors()[0] if exc.errors() else {}
+    where = ".".join(str(p) for p in first.get("loc", [])[1:]) or "request"
+    return JSONResponse(status_code=422, content={"detail": f"Check {where}: {first.get('msg', 'invalid value')}"})
 
 
 @app.exception_handler(Exception)
