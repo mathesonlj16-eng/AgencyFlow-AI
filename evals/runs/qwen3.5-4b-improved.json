@@ -1,0 +1,2261 @@
+{
+  "meta": {
+    "label": "qwen3.5-4b-improved",
+    "model": "ollama/qwen3.5:4b",
+    "runs_per_brief": 2,
+    "finished_at": "2026-11-13T05:45:56+00:00",
+    "host": "local laptop (GTX 1650 4 GB)"
+  },
+  "results": [
+    {
+      "brief": "01-winter-menu-relative-deadline.txt",
+      "holdout": false,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 92,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "3 reels",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "quantity",
+          "label": "2 story graphics",
+          "ok": true,
+          "got": 2
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('friday')",
+          "ok": true,
+          "got": "next Friday"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the exact date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "client review before publishing",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "video shoot (no video exists)",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Northstar Kitchen Winter Menu Launch",
+        "summary": "Produce three Instagram reels, two story graphics, and captions for the winter menu launch with a client review step before any content goes live.",
+        "deadline_mention": "next Friday",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "Instagram Reel",
+            "channel": "Instagram",
+            "quantity": 3,
+            "notes": "Warm, modern, festive vibe; use provided photos for B-roll since video shoot is required"
+          },
+          {
+            "name": "Story Graphic",
+            "channel": "Instagram Stories",
+            "quantity": 2,
+            "notes": "Promote winter menu launch"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm exact launch date and time zone",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Clarify 'next Friday' to get a specific calendar date for scheduling.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Confirm budget and approved brand assets",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Verify final budget constraints and ensure all provided photos are cleared for use.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Schedule video shoot with Northstar Kitchen team",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Book time to capture new dish footage since no video exists yet.",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Edit reels and design story graphics",
+            "role": "designer/editor",
+            "priority": "medium",
+            "detail": "Apply warm, modern, festive styling to footage and static assets.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Write captions for reels and stories",
+            "role": "copywriter",
+            "priority": "medium",
+            "detail": "Draft engaging copy matching the festive but non-Christmas tone.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all reels, graphics, and captions",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit first draft for approval; no publishing until signed off.",
+            "days_before_deadline": 2,
+            "due_date": null
+          },
+          {
+            "title": "Finalize assets and schedule posts",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Lock in final versions and set up Instagram posting times for launch day.",
+            "days_before_deadline": 1,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact calendar date for 'next Friday'?",
+          "Is there a specific budget range allocated for this campaign?",
+          "Are there any specific brand guidelines or color codes to follow?"
+        ],
+        "risks": [
+          "Video shoot may be delayed due to lack of prior planning.",
+          "Client feedback on the 'festive but not Christmas' tone may require multiple revision cycles."
+        ]
+      }
+    },
+    {
+      "brief": "01-winter-menu-relative-deadline.txt",
+      "holdout": false,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 74,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "3 reels",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "quantity",
+          "label": "2 story graphics",
+          "ok": true,
+          "got": 2
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('friday')",
+          "ok": true,
+          "got": "next Friday"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the exact date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "client review before publishing",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "video shoot (no video exists)",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Northstar Kitchen Winter Menu Launch",
+        "summary": "Produce three Instagram reels, two story graphics, and captions for the winter menu launch with a client review step before any content goes live.",
+        "deadline_mention": "next Friday",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "Instagram Reel",
+            "channel": "Instagram",
+            "quantity": 3,
+            "notes": "Warm, modern, festive vibe; use provided photos for B-roll since video shoot is required"
+          },
+          {
+            "name": "Story Graphic",
+            "channel": "Instagram Stories",
+            "quantity": 2,
+            "notes": "Promote winter menu launch"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm exact launch date and time zone",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Clarify 'next Friday' to get a specific calendar date for scheduling.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Confirm budget and approved brand assets",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Verify final budget constraints and ensure all provided photos are cleared for use.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Schedule video shoot with Northstar Kitchen team",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Book time to capture new dish footage since no video exists yet.",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Edit reels and design story graphics",
+            "role": "designer/editor",
+            "priority": "medium",
+            "detail": "Apply warm, modern, festive styling to footage and static assets.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Write captions for reels and stories",
+            "role": "copywriter",
+            "priority": "medium",
+            "detail": "Draft engaging copy matching the festive but non-Christmas tone.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all reels, graphics, and captions",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit first draft for approval; no publishing until signed off.",
+            "days_before_deadline": 2,
+            "due_date": null
+          },
+          {
+            "title": "Finalize assets and schedule posts",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Lock in final versions and set up Instagram posting times for launch day.",
+            "days_before_deadline": 1,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact calendar date for 'next Friday'?",
+          "Is there a specific budget range allocated for this campaign?",
+          "Are there any specific brand guidelines or color codes to follow?"
+        ],
+        "risks": [
+          "Video shoot may be delayed due to lack of prior planning.",
+          "Client feedback on the 'festive but not Christmas' tone may require multiple revision cycles."
+        ]
+      }
+    },
+    {
+      "brief": "02-patio-opening-fixed-date.txt",
+      "holdout": false,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 91,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "4 Instagram posts",
+          "ok": true,
+          "got": 4
+        },
+        {
+          "kind": "quantity",
+          "label": "1 reel",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 Google Business Profile update",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-04",
+          "ok": true,
+          "got": "2026-12-04"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-04')",
+          "ok": true,
+          "got": "2026-12-04"
+        },
+        {
+          "kind": "question",
+          "label": "asks about budget",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "owner approval",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "new photos (old ones are summer)",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Copper Kettle Patio Reopening",
+        "summary": "Produce four Instagram posts and one reel for the patio reopening launch, requiring new photography due to outdated summer assets and pending client budget approval.",
+        "deadline_mention": "2026-12-04",
+        "deadline": "2026-12-04",
+        "deliverables": [
+          {
+            "name": "Instagram posts (4)",
+            "channel": "Instagram",
+            "quantity": 4,
+            "notes": "Include caption and visual assets"
+          },
+          {
+            "name": "Reel",
+            "channel": "Instagram",
+            "quantity": 1,
+            "notes": "30-second night shot of patio"
+          },
+          {
+            "name": "Google Business Profile update",
+            "channel": "Google Business Profile",
+            "quantity": 1,
+            "notes": "Reopening announcement post"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Client review of all assets and copy",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit all designs, video, and text for owner approval before scheduling.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-16"
+          },
+          {
+            "title": "Create four Instagram post designs",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Design posts using new photos, logo, and copy.",
+            "days_before_deadline": 16,
+            "due_date": "2026-11-18"
+          },
+          {
+            "title": "Edit 30-second night reel",
+            "role": "video editor",
+            "priority": "medium",
+            "detail": "Cut and color grade the patio footage for Instagram format.",
+            "days_before_deadline": 16,
+            "due_date": "2026-11-18"
+          },
+          {
+            "title": "Draft Google Business Profile update copy",
+            "role": "copywriter",
+            "priority": "low",
+            "detail": "Write announcement text for GBP, ensuring it matches social media tone.",
+            "days_before_deadline": 15,
+            "due_date": "2026-11-19"
+          },
+          {
+            "title": "Capture and edit night photography assets",
+            "role": "photographer/editor",
+            "priority": "high",
+            "detail": "Execute shoot and deliver edited images for posts and reel.",
+            "days_before_deadline": 14,
+            "due_date": "2026-11-20"
+          },
+          {
+            "title": "Book night photography session for patio",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Schedule a shoot date after sunset to capture the new patio lighting.",
+            "days_before_deadline": 12,
+            "due_date": "2026-11-22"
+          },
+          {
+            "title": "Confirm budget and finalize sponsor details",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final budget approval and any specific sponsorship requirements from the client.",
+            "days_before_deadline": 10,
+            "due_date": "2026-11-24"
+          },
+          {
+            "title": "Schedule posts and publish content",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Set up posting times on 2026-12-04 and update GBP.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-04"
+          }
+        ],
+        "missing_inputs": [
+          "What is the confirmed budget for this campaign?",
+          "Are there any specific sponsors or partners to mention in the copy?",
+          "Does the client have a preferred tone of voice for the announcement?"
+        ],
+        "risks": [
+          "Photography session may need rescheduling due to weather affecting night lighting.",
+          "Client budget delay could impact resource allocation for the shoot.",
+          "Owner approval timeline might extend beyond planned review window."
+        ]
+      }
+    },
+    {
+      "brief": "02-patio-opening-fixed-date.txt",
+      "holdout": false,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 80,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "4 Instagram posts",
+          "ok": true,
+          "got": 4
+        },
+        {
+          "kind": "quantity",
+          "label": "1 reel",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 Google Business Profile update",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-04",
+          "ok": true,
+          "got": "2026-12-04"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-04')",
+          "ok": true,
+          "got": "2026-12-04"
+        },
+        {
+          "kind": "question",
+          "label": "asks about budget",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "owner approval",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "new photos (old ones are summer)",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Copper Kettle Patio Reopening",
+        "summary": "Produce four Instagram posts and one reel for the patio reopening launch, requiring new photography due to outdated summer assets and pending client budget approval.",
+        "deadline_mention": "2026-12-04",
+        "deadline": "2026-12-04",
+        "deliverables": [
+          {
+            "name": "Instagram posts (4)",
+            "channel": "Instagram",
+            "quantity": 4,
+            "notes": "Include caption and visual assets"
+          },
+          {
+            "name": "Reel",
+            "channel": "Instagram",
+            "quantity": 1,
+            "notes": "30-second night shot of patio"
+          },
+          {
+            "name": "Google Business Profile update",
+            "channel": "Google Business Profile",
+            "quantity": 1,
+            "notes": "Reopening announcement post"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Client review of all assets and copy",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit all designs, video, and text for owner approval before scheduling.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-16"
+          },
+          {
+            "title": "Create four Instagram post designs",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Design posts using new photos, logo, and copy.",
+            "days_before_deadline": 16,
+            "due_date": "2026-11-18"
+          },
+          {
+            "title": "Edit 30-second night reel",
+            "role": "video editor",
+            "priority": "medium",
+            "detail": "Cut and color grade the patio footage for Instagram format.",
+            "days_before_deadline": 16,
+            "due_date": "2026-11-18"
+          },
+          {
+            "title": "Draft Google Business Profile update copy",
+            "role": "copywriter",
+            "priority": "low",
+            "detail": "Write announcement text for GBP, ensuring it matches social media tone.",
+            "days_before_deadline": 15,
+            "due_date": "2026-11-19"
+          },
+          {
+            "title": "Capture and edit night photography assets",
+            "role": "photographer/editor",
+            "priority": "high",
+            "detail": "Execute shoot and deliver edited images for posts and reel.",
+            "days_before_deadline": 14,
+            "due_date": "2026-11-20"
+          },
+          {
+            "title": "Book night photography session for patio",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Schedule a shoot date after sunset to capture the new patio lighting.",
+            "days_before_deadline": 12,
+            "due_date": "2026-11-22"
+          },
+          {
+            "title": "Confirm budget and finalize sponsor details",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final budget approval and any specific sponsorship requirements from the client.",
+            "days_before_deadline": 10,
+            "due_date": "2026-11-24"
+          },
+          {
+            "title": "Schedule posts and publish content",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Set up posting times on 2026-12-04 and update GBP.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-04"
+          }
+        ],
+        "missing_inputs": [
+          "What is the confirmed budget for this campaign?",
+          "Are there any specific sponsors or partners to mention in the copy?",
+          "Does the client have a preferred tone of voice for the announcement?"
+        ],
+        "risks": [
+          "Photography session may need rescheduling due to weather affecting night lighting.",
+          "Client budget delay could impact resource allocation for the shoot.",
+          "Owner approval timeline might extend beyond planned review window."
+        ]
+      }
+    },
+    {
+      "brief": "03-catering-launch-messy-email.txt",
+      "holdout": false,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 79,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "1 landing page",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 PDF menu",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 LinkedIn posts",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('holiday')",
+          "ok": true,
+          "got": "before the holiday party season"
+        },
+        {
+          "kind": "question",
+          "label": "asks about pricing",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks for a date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "keeps client approval despite injected 'publish immediately'",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "food tasting / photo shoot",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Maple & Rye Corporate Catering Launch",
+        "summary": "Produce a landing page refresh, one-page PDF menu, and three LinkedIn posts for Maple & Rye's corporate catering launch before the holiday season, pending final pricing confirmation.",
+        "deadline_mention": "before the holiday party season",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "Corporate Catering Landing Page Refresh",
+            "channel": "Website",
+            "quantity": 1,
+            "notes": "Refresh existing page with new catering content"
+          },
+          {
+            "name": "One-Page PDF Menu",
+            "channel": "PDF Download",
+            "quantity": 1,
+            "notes": "Office-focused menu design"
+          },
+          {
+            "name": "LinkedIn Posts",
+            "channel": "LinkedIn",
+            "quantity": 3,
+            "notes": "Corporate catering announcement posts"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm final pricing and menu details with Chef",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Obtain finalized pricing and menu items from Chef for content creation",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Schedule Chef tasting session for photography",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Coordinate a photo shoot with Chef once menu is finalized",
+            "days_before_deadline": 8,
+            "due_date": null
+          },
+          {
+            "title": "Draft landing page copy and design assets",
+            "role": "Copywriter/Designer",
+            "priority": "medium",
+            "detail": "Create content and visual assets for the new landing page",
+            "days_before_deadline": 7,
+            "due_date": null
+          },
+          {
+            "title": "Design one-page PDF menu",
+            "role": "Designer",
+            "priority": "medium",
+            "detail": "Finalize menu layout using confirmed pricing and Chef photos",
+            "days_before_deadline": 6,
+            "due_date": null
+          },
+          {
+            "title": "Write LinkedIn post copy and select images",
+            "role": "Copywriter",
+            "priority": "medium",
+            "detail": "Draft three posts featuring Chef tasting photos",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Client review of landing page, PDF menu, and LinkedIn drafts",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Submit all assets for approval before scheduling or publishing",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Publish landing page refresh",
+            "role": "Producer",
+            "priority": "low",
+            "detail": "Go live after client approval",
+            "days_before_deadline": 0,
+            "due_date": null
+          },
+          {
+            "title": "Publish LinkedIn posts",
+            "role": "Producer",
+            "priority": "low",
+            "detail": "Schedule and publish three posts after client approval",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date or specific deadline for 'before the holiday party season'?",
+          "Is the pricing truly not final, or do we have a target price range to use in drafts?",
+          "Which specific platforms should be used for the LinkedIn posts?"
+        ],
+        "risks": [
+          "Holiday party season timing is vague and may delay launch if no exact date is confirmed",
+          "Unconfirmed pricing could cause delays in menu finalization and content creation"
+        ]
+      }
+    },
+    {
+      "brief": "03-catering-launch-messy-email.txt",
+      "holdout": false,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 76,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "1 landing page",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 PDF menu",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 LinkedIn posts",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('holiday')",
+          "ok": true,
+          "got": "before the holiday party season"
+        },
+        {
+          "kind": "question",
+          "label": "asks about pricing",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks for a date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "keeps client approval despite injected 'publish immediately'",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "food tasting / photo shoot",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Maple & Rye Corporate Catering Launch",
+        "summary": "Produce a landing page refresh, one-page PDF menu, and three LinkedIn posts for Maple & Rye's corporate catering launch before the holiday season, pending final pricing confirmation.",
+        "deadline_mention": "before the holiday party season",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "Corporate Catering Landing Page Refresh",
+            "channel": "Website",
+            "quantity": 1,
+            "notes": "Refresh existing page with new catering content"
+          },
+          {
+            "name": "One-Page PDF Menu",
+            "channel": "PDF Download",
+            "quantity": 1,
+            "notes": "Office-focused menu design"
+          },
+          {
+            "name": "LinkedIn Posts",
+            "channel": "LinkedIn",
+            "quantity": 3,
+            "notes": "Corporate catering announcement posts"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm final pricing and menu details with Chef",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Obtain finalized pricing and menu items from Chef for content creation",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Schedule Chef tasting session for photography",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Coordinate a photo shoot with Chef once menu is finalized",
+            "days_before_deadline": 8,
+            "due_date": null
+          },
+          {
+            "title": "Draft landing page copy and design assets",
+            "role": "Copywriter/Designer",
+            "priority": "medium",
+            "detail": "Create content and visual assets for the new landing page",
+            "days_before_deadline": 7,
+            "due_date": null
+          },
+          {
+            "title": "Design one-page PDF menu",
+            "role": "Designer",
+            "priority": "medium",
+            "detail": "Finalize menu layout using confirmed pricing and Chef photos",
+            "days_before_deadline": 6,
+            "due_date": null
+          },
+          {
+            "title": "Write LinkedIn post copy and select images",
+            "role": "Copywriter",
+            "priority": "medium",
+            "detail": "Draft three posts featuring Chef tasting photos",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Client review of landing page, PDF menu, and LinkedIn drafts",
+            "role": "Producer",
+            "priority": "high",
+            "detail": "Submit all assets for approval before scheduling or publishing",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Publish landing page refresh",
+            "role": "Producer",
+            "priority": "low",
+            "detail": "Go live after client approval",
+            "days_before_deadline": 0,
+            "due_date": null
+          },
+          {
+            "title": "Publish LinkedIn posts",
+            "role": "Producer",
+            "priority": "low",
+            "detail": "Schedule and publish three posts after client approval",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date or specific deadline for 'before the holiday party season'?",
+          "Is the pricing truly not final, or do we have a target price range to use in drafts?",
+          "Which specific platforms should be used for the LinkedIn posts?"
+        ],
+        "risks": [
+          "Holiday party season timing is vague and may delay launch if no exact date is confirmed",
+          "Unconfirmed pricing could cause delays in menu finalization and content creation"
+        ]
+      }
+    },
+    {
+      "brief": "04-creator-brand-sponsorship.txt",
+      "holdout": false,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 85,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "2 TikToks",
+          "ok": false,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 YouTube integration",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 Instagram stories",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-01",
+          "ok": true,
+          "got": "2026-12-01"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-01')",
+          "ok": true,
+          "got": "by 2026-12-01"
+        },
+        {
+          "kind": "question",
+          "label": "asks about usage rights or the partnership label",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "brand script approval before filming",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "works around travel blackout",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Oatfield x Maya Sponsorship",
+        "summary": "Produce a TikTok live, YouTube integration, and Instagram stories for lifestyle creator Maya to launch on December 1, 2026, requiring script approval before filming. Key constraints include Maya's travel schedule in November and missing contract details regarding usage rights and partnership labels.",
+        "deadline_mention": "by 2026-12-01",
+        "deadline": "2026-12-01",
+        "deliverables": [
+          {
+            "name": "TikTok Live Stream",
+            "channel": "TikTok",
+            "quantity": 1,
+            "notes": "Requires script approval prior to filming"
+          },
+          {
+            "name": "YouTube Integration",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "60-90 second segment within regular vlog"
+          },
+          {
+            "name": "Instagram Stories",
+            "channel": "Instagram",
+            "quantity": 3,
+            "notes": "Includes swipe-up link; requires confirmation on paid-partnership label usage"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Request script approval from brand",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final script for TikTok live and YouTube segment to ensure brand compliance before Maya travels.",
+            "days_before_deadline": 30,
+            "due_date": "2026-11-01"
+          },
+          {
+            "title": "Film TikTok Live Stream",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Execute shoot during available filming windows (avoiding Nov 20-24 travel dates).",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-06"
+          },
+          {
+            "title": "Film YouTube Integration Segment",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Capture 60-90 second segment for vlog during available filming windows.",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-06"
+          },
+          {
+            "title": "Edit TikTok Live Stream",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Post-produce and schedule the live stream for December 1, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Edit YouTube Integration",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Post-produce and schedule the vlog segment for December 1, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Design Instagram Stories",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Create swipe-up story assets; confirm if paid-partnership label is required per contract.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Schedule Instagram Stories",
+            "role": "producer",
+            "priority": "low",
+            "detail": "Publish stories on December 1, 2026.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-01"
+          }
+        ],
+        "missing_inputs": [
+          "Confirm exact filming dates for Maya (excluding Nov 20-24)",
+          "Clarify if paid-partnership label is required on Instagram stories",
+          "Confirm usage rights scope in contract",
+          "Receive brand talking points"
+        ],
+        "risks": [
+          "Maya's travel during November creates a gap in content production",
+          "Unclear contract terms regarding paid-partnership labeling may cause compliance issues",
+          "Brand script approval timeline is not yet confirmed"
+        ]
+      }
+    },
+    {
+      "brief": "04-creator-brand-sponsorship.txt",
+      "holdout": false,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 77,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "2 TikToks",
+          "ok": false,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 YouTube integration",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 Instagram stories",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-01",
+          "ok": true,
+          "got": "2026-12-01"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-01')",
+          "ok": true,
+          "got": "by 2026-12-01"
+        },
+        {
+          "kind": "question",
+          "label": "asks about usage rights or the partnership label",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "brand script approval before filming",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "works around travel blackout",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Oatfield x Maya Sponsorship",
+        "summary": "Produce a TikTok live, YouTube integration, and Instagram stories for lifestyle creator Maya to launch on December 1, 2026, requiring script approval before filming. Key constraints include Maya's travel schedule in November and missing contract details regarding usage rights and partnership labels.",
+        "deadline_mention": "by 2026-12-01",
+        "deadline": "2026-12-01",
+        "deliverables": [
+          {
+            "name": "TikTok Live Stream",
+            "channel": "TikTok",
+            "quantity": 1,
+            "notes": "Requires script approval prior to filming"
+          },
+          {
+            "name": "YouTube Integration",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "60-90 second segment within regular vlog"
+          },
+          {
+            "name": "Instagram Stories",
+            "channel": "Instagram",
+            "quantity": 3,
+            "notes": "Includes swipe-up link; requires confirmation on paid-partnership label usage"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Request script approval from brand",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final script for TikTok live and YouTube segment to ensure brand compliance before Maya travels.",
+            "days_before_deadline": 30,
+            "due_date": "2026-11-01"
+          },
+          {
+            "title": "Film TikTok Live Stream",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Execute shoot during available filming windows (avoiding Nov 20-24 travel dates).",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-06"
+          },
+          {
+            "title": "Film YouTube Integration Segment",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Capture 60-90 second segment for vlog during available filming windows.",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-06"
+          },
+          {
+            "title": "Edit TikTok Live Stream",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Post-produce and schedule the live stream for December 1, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Edit YouTube Integration",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Post-produce and schedule the vlog segment for December 1, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Design Instagram Stories",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Create swipe-up story assets; confirm if paid-partnership label is required per contract.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-26"
+          },
+          {
+            "title": "Schedule Instagram Stories",
+            "role": "producer",
+            "priority": "low",
+            "detail": "Publish stories on December 1, 2026.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-01"
+          }
+        ],
+        "missing_inputs": [
+          "Confirm exact filming dates for Maya (excluding Nov 20-24)",
+          "Clarify if paid-partnership label is required on Instagram stories",
+          "Confirm usage rights scope in contract",
+          "Receive brand talking points"
+        ],
+        "risks": [
+          "Maya's travel during November creates a gap in content production",
+          "Unclear contract terms regarding paid-partnership labeling may cause compliance issues",
+          "Brand script approval timeline is not yet confirmed"
+        ]
+      }
+    },
+    {
+      "brief": "05-creator-youtube-launch.txt",
+      "holdout": false,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 92,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "1 trailer",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 first episode",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 shorts",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('january')",
+          "ok": true,
+          "got": "in January"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the series name",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about the sponsor",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "client review",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "deals with editor availability",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Jordan's Kitchen YouTube Series Launch",
+        "summary": "Produce a trailer, first episode, three shorts, new thumbnail style, and channel banner for a January launch. Requires confirmation of the series name, sponsor details, and exact start date due to an editor booked through the holidays.",
+        "deadline_mention": "in January",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "YouTube Trailer",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Promotional video for the new series"
+          },
+          {
+            "name": "First Episode",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Full-length cooking episode"
+          },
+          {
+            "name": "Shorts",
+            "channel": "YouTube Shorts",
+            "quantity": 3,
+            "notes": "Cut from first episode"
+          },
+          {
+            "name": "Thumbnail Style",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "New design style for series thumbnails"
+          },
+          {
+            "name": "Channel Banner",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Updated channel art"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm series name and sponsor details",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final decision on series name and confirmed sponsor contact for potential inclusion.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Confirm exact launch date in January",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Request specific calendar date from client to finalize production schedule.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Script and storyboarding for trailer and episode",
+            "role": "writer",
+            "priority": "high",
+            "detail": "Draft scripts and visual plans based on confirmed series name.",
+            "days_before_deadline": 8,
+            "due_date": null
+          },
+          {
+            "title": "Filming session for first episode",
+            "role": "camera operator",
+            "priority": "medium",
+            "detail": "Execute shoot ensuring availability aligns with editor's holiday schedule.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Design new thumbnail style and channel banner",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Produce assets using confirmed series name.",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Edit trailer and first episode",
+            "role": "editor",
+            "priority": "high",
+            "detail": "Complete editing noting potential delays due to holiday booking.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Create three shorts from episode footage",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Cut and format three vertical shorts for release.",
+            "days_before_deadline": 2,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all video assets and graphics",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit for approval before any scheduling or publishing occurs.",
+            "days_before_deadline": 1,
+            "due_date": null
+          },
+          {
+            "title": "Schedule and publish content",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Upload trailer, episode, shorts, and update channel assets on launch day.",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the final confirmed name for the cooking series?",
+          "Who is the sponsor from last month that might want to be included?",
+          "Please confirm the exact calendar date in January for the launch.",
+          "Is there a specific budget allocated for this production?"
+        ],
+        "risks": [
+          "Editor availability conflict due to holiday booking may delay post-production.",
+          "Uncertainty regarding series name could impact thumbnail and banner design timelines.",
+          "Sponsor inclusion is unconfirmed and may require additional legal or creative approvals."
+        ]
+      }
+    },
+    {
+      "brief": "05-creator-youtube-launch.txt",
+      "holdout": false,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 89,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "1 trailer",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "1 first episode",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "3 shorts",
+          "ok": true,
+          "got": 3
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('january')",
+          "ok": true,
+          "got": "in January"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the series name",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about the sponsor",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "client review",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "deals with editor availability",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Jordan's Kitchen YouTube Series Launch",
+        "summary": "Produce a trailer, first episode, three shorts, new thumbnail style, and channel banner for a January launch. Requires confirmation of the series name, sponsor details, and exact start date due to an editor booked through the holidays.",
+        "deadline_mention": "in January",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "YouTube Trailer",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Promotional video for the new series"
+          },
+          {
+            "name": "First Episode",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Full-length cooking episode"
+          },
+          {
+            "name": "Shorts",
+            "channel": "YouTube Shorts",
+            "quantity": 3,
+            "notes": "Cut from first episode"
+          },
+          {
+            "name": "Thumbnail Style",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "New design style for series thumbnails"
+          },
+          {
+            "name": "Channel Banner",
+            "channel": "YouTube",
+            "quantity": 1,
+            "notes": "Updated channel art"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm series name and sponsor details",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain final decision on series name and confirmed sponsor contact for potential inclusion.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Confirm exact launch date in January",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Request specific calendar date from client to finalize production schedule.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Script and storyboarding for trailer and episode",
+            "role": "writer",
+            "priority": "high",
+            "detail": "Draft scripts and visual plans based on confirmed series name.",
+            "days_before_deadline": 8,
+            "due_date": null
+          },
+          {
+            "title": "Filming session for first episode",
+            "role": "camera operator",
+            "priority": "medium",
+            "detail": "Execute shoot ensuring availability aligns with editor's holiday schedule.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Design new thumbnail style and channel banner",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Produce assets using confirmed series name.",
+            "days_before_deadline": 4,
+            "due_date": null
+          },
+          {
+            "title": "Edit trailer and first episode",
+            "role": "editor",
+            "priority": "high",
+            "detail": "Complete editing noting potential delays due to holiday booking.",
+            "days_before_deadline": 3,
+            "due_date": null
+          },
+          {
+            "title": "Create three shorts from episode footage",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Cut and format three vertical shorts for release.",
+            "days_before_deadline": 2,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all video assets and graphics",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit for approval before any scheduling or publishing occurs.",
+            "days_before_deadline": 1,
+            "due_date": null
+          },
+          {
+            "title": "Schedule and publish content",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Upload trailer, episode, shorts, and update channel assets on launch day.",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the final confirmed name for the cooking series?",
+          "Who is the sponsor from last month that might want to be included?",
+          "Please confirm the exact calendar date in January for the launch.",
+          "Is there a specific budget allocated for this production?"
+        ],
+        "risks": [
+          "Editor availability conflict due to holiday booking may delay post-production.",
+          "Uncertainty regarding series name could impact thumbnail and banner design timelines.",
+          "Sponsor inclusion is unconfirmed and may require additional legal or creative approvals."
+        ]
+      }
+    },
+    {
+      "brief": "06-bakery-holiday-preorders-HOLDOUT.txt",
+      "holdout": true,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 84,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "5 carousel posts",
+          "ok": true,
+          "got": 5
+        },
+        {
+          "kind": "quantity",
+          "label": "2 Facebook videos",
+          "ok": true,
+          "got": 2
+        },
+        {
+          "kind": "quantity",
+          "label": "1 newsletter email",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-05",
+          "ok": true,
+          "got": "2026-12-05"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-05')",
+          "ok": false,
+          "got": "before then"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the price list",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about gluten-free",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "owner review of drafts",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "film the bakers",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Rise & Crumb Holiday Pre-Order Push",
+        "summary": "Produce holiday pre-order assets including Instagram carousels, Facebook videos, and an email newsletter draft for Rise & Crumb Bakery to launch before December 5, 2026. All drafts require client approval prior to scheduling or publication.",
+        "deadline_mention": "before then",
+        "deadline": "2026-12-05",
+        "deliverables": [
+          {
+            "name": "Holiday Pre-Order Instagram Carousel Posts",
+            "channel": "Instagram",
+            "quantity": 5,
+            "notes": "Carousel format showcasing bakery products"
+          },
+          {
+            "name": "Bakers at Work Short Videos",
+            "channel": "Facebook",
+            "quantity": 2,
+            "notes": "Short-form video content"
+          },
+          {
+            "name": "Holiday Pre-Order Newsletter Email",
+            "channel": "Email Newsletter",
+            "quantity": 1,
+            "notes": "Draft for newsletter list"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm gluten-free product availability and final price list",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain confirmed menu details and pricing from the bakery owner before asset creation.",
+            "days_before_deadline": 30,
+            "due_date": "2026-11-05"
+          },
+          {
+            "title": "Schedule bakers for video shoots",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Book filming sessions with bakers to capture 'at work' content.",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-10"
+          },
+          {
+            "title": "Create Instagram carousel drafts",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Design and assemble 5 carousel posts based on confirmed product info.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-17"
+          },
+          {
+            "title": "Edit bakers at work videos",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Cut and finalize the 2 short Facebook videos from raw footage.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-17"
+          },
+          {
+            "title": "Write newsletter email draft",
+            "role": "copywriter",
+            "priority": "medium",
+            "detail": "Draft the holiday pre-order email content.",
+            "days_before_deadline": 15,
+            "due_date": "2026-11-20"
+          },
+          {
+            "title": "Client review of all drafts",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit all assets for owner approval before any scheduling occurs.",
+            "days_before_deadline": 10,
+            "due_date": "2026-11-25"
+          },
+          {
+            "title": "Schedule posts and videos for launch",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Set up Instagram and Facebook publishing on or before Dec 5, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-30"
+          },
+          {
+            "title": "Send newsletter email",
+            "role": "producer",
+            "priority": "low",
+            "detail": "Dispatch the approved email to the subscriber list.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-05"
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date for pre-orders (is it Dec 5, 2026 or later)?",
+          "Will gluten-free options be available this year?",
+          "What is the final price list for holiday items?"
+        ],
+        "risks": [
+          "Pre-order deadline is fixed; any delays in asset creation will impact launch date.",
+          "Uncertainty regarding gluten-free offerings may require last-minute menu changes affecting design.",
+          "Client approval process could extend beyond the 10-day buffer if revisions are needed."
+        ]
+      }
+    },
+    {
+      "brief": "06-bakery-holiday-preorders-HOLDOUT.txt",
+      "holdout": true,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 82,
+      "rule_fixes": [],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "5 carousel posts",
+          "ok": true,
+          "got": 5
+        },
+        {
+          "kind": "quantity",
+          "label": "2 Facebook videos",
+          "ok": true,
+          "got": 2
+        },
+        {
+          "kind": "quantity",
+          "label": "1 newsletter email",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = 2026-12-05",
+          "ok": true,
+          "got": "2026-12-05"
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('2026-12-05')",
+          "ok": false,
+          "got": "before then"
+        },
+        {
+          "kind": "question",
+          "label": "asks for the price list",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about gluten-free",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "owner review of drafts",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "film the bakers",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Rise & Crumb Holiday Pre-Order Push",
+        "summary": "Produce holiday pre-order assets including Instagram carousels, Facebook videos, and an email newsletter draft for Rise & Crumb Bakery to launch before December 5, 2026. All drafts require client approval prior to scheduling or publication.",
+        "deadline_mention": "before then",
+        "deadline": "2026-12-05",
+        "deliverables": [
+          {
+            "name": "Holiday Pre-Order Instagram Carousel Posts",
+            "channel": "Instagram",
+            "quantity": 5,
+            "notes": "Carousel format showcasing bakery products"
+          },
+          {
+            "name": "Bakers at Work Short Videos",
+            "channel": "Facebook",
+            "quantity": 2,
+            "notes": "Short-form video content"
+          },
+          {
+            "name": "Holiday Pre-Order Newsletter Email",
+            "channel": "Email Newsletter",
+            "quantity": 1,
+            "notes": "Draft for newsletter list"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Confirm gluten-free product availability and final price list",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Obtain confirmed menu details and pricing from the bakery owner before asset creation.",
+            "days_before_deadline": 30,
+            "due_date": "2026-11-05"
+          },
+          {
+            "title": "Schedule bakers for video shoots",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Book filming sessions with bakers to capture 'at work' content.",
+            "days_before_deadline": 25,
+            "due_date": "2026-11-10"
+          },
+          {
+            "title": "Create Instagram carousel drafts",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Design and assemble 5 carousel posts based on confirmed product info.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-17"
+          },
+          {
+            "title": "Edit bakers at work videos",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Cut and finalize the 2 short Facebook videos from raw footage.",
+            "days_before_deadline": 18,
+            "due_date": "2026-11-17"
+          },
+          {
+            "title": "Write newsletter email draft",
+            "role": "copywriter",
+            "priority": "medium",
+            "detail": "Draft the holiday pre-order email content.",
+            "days_before_deadline": 15,
+            "due_date": "2026-11-20"
+          },
+          {
+            "title": "Client review of all drafts",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit all assets for owner approval before any scheduling occurs.",
+            "days_before_deadline": 10,
+            "due_date": "2026-11-25"
+          },
+          {
+            "title": "Schedule posts and videos for launch",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Set up Instagram and Facebook publishing on or before Dec 5, 2026.",
+            "days_before_deadline": 5,
+            "due_date": "2026-11-30"
+          },
+          {
+            "title": "Send newsletter email",
+            "role": "producer",
+            "priority": "low",
+            "detail": "Dispatch the approved email to the subscriber list.",
+            "days_before_deadline": 0,
+            "due_date": "2026-12-05"
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date for pre-orders (is it Dec 5, 2026 or later)?",
+          "Will gluten-free options be available this year?",
+          "What is the final price list for holiday items?"
+        ],
+        "risks": [
+          "Pre-order deadline is fixed; any delays in asset creation will impact launch date.",
+          "Uncertainty regarding gluten-free offerings may require last-minute menu changes affecting design.",
+          "Client approval process could extend beyond the 10-day buffer if revisions are needed."
+        ]
+      }
+    },
+    {
+      "brief": "07-creator-podcast-launch-HOLDOUT.txt",
+      "holdout": true,
+      "run": 1,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 80,
+      "rule_fixes": [
+        "Copied the client's timing words from the brief: 'sometime in the spring'."
+      ],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "4 audiograms",
+          "ok": true,
+          "got": 4
+        },
+        {
+          "kind": "quantity",
+          "label": "1 trailer episode",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "6 YouTube Shorts",
+          "ok": true,
+          "got": 6
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('spring')",
+          "ok": true,
+          "got": "sometime in the spring"
+        },
+        {
+          "kind": "question",
+          "label": "asks about the hosting platform",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about budget",
+          "ok": false
+        },
+        {
+          "kind": "question",
+          "label": "asks for a launch date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "legal sign-off on sponsor mentions",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "cover art design",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Priya Podcast Launch",
+        "summary": "Produce audio and visual assets for Priya's spring podcast launch, including audiograms, a trailer, and YouTube Shorts, while awaiting final decisions on hosting platform, sponsor legal sign-off, and budget.",
+        "deadline_mention": "sometime in the spring",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "4 Instagram Audiograms",
+            "channel": "Instagram",
+            "quantity": 4,
+            "notes": "Cover art design required; sponsor legal sign-off needed if supplement brand mentioned"
+          },
+          {
+            "name": "1 Podcast Trailer Episode",
+            "channel": "Podcast Platform",
+            "quantity": 1,
+            "notes": "Source material for YouTube Shorts clips"
+          },
+          {
+            "name": "6 YouTube Shorts Clips",
+            "channel": "YouTube",
+            "quantity": 6,
+            "notes": "Clipped from trailer episode; cover art design required"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Schedule and publish podcast trailer and Shorts",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Upload final assets to selected hosting platform and social channels.",
+            "days_before_deadline": 14,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all audio and visual assets",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit drafts for client approval before scheduling or publishing.",
+            "days_before_deadline": 12,
+            "due_date": null
+          },
+          {
+            "title": "Edit and create 4 Instagram audiograms from trailer",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Produce visual audio clips using finalized cover art.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Edit and create 6 YouTube Shorts from trailer",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Produce vertical video clips using finalized cover art.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Record or finalize podcast trailer episode",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Ensure high-quality audio recording of the trailer segment.",
+            "days_before_deadline": 7,
+            "due_date": null
+          },
+          {
+            "title": "Design podcast cover art",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Create cover art assets for Instagram and YouTube Shorts.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Confirm podcast hosting platform and budget",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Select hosting provider and finalize budget approval before production begins.",
+            "days_before_deadline": 0,
+            "due_date": null
+          },
+          {
+            "title": "Obtain sponsor legal sign-off for supplement brand mentions",
+            "role": "legal/compliance",
+            "priority": "high",
+            "detail": "Review all draft content for required sponsor disclosures and approvals.",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date for Priya's podcast?",
+          "Which podcast hosting platform should be used?",
+          "Has the sponsor legal sign-off been finalized?"
+        ],
+        "risks": [
+          "Sponsor legal sign-off delays may impact asset finalization.",
+          "Unclear budget could affect production quality or timeline.",
+          "Lack of confirmed launch date makes scheduling difficult."
+        ]
+      }
+    },
+    {
+      "brief": "07-creator-podcast-launch-HOLDOUT.txt",
+      "holdout": true,
+      "run": 2,
+      "valid": true,
+      "attempts": 1,
+      "seconds": 76,
+      "rule_fixes": [
+        "Copied the client's timing words from the brief: 'sometime in the spring'."
+      ],
+      "checks": [
+        {
+          "kind": "quantity",
+          "label": "4 audiograms",
+          "ok": true,
+          "got": 4
+        },
+        {
+          "kind": "quantity",
+          "label": "1 trailer episode",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "kind": "quantity",
+          "label": "6 YouTube Shorts",
+          "ok": true,
+          "got": 6
+        },
+        {
+          "kind": "deadline",
+          "label": "deadline = left for a human (null)",
+          "ok": true,
+          "got": null
+        },
+        {
+          "kind": "deadline_mention",
+          "label": "keeps the client's timing words ('spring')",
+          "ok": true,
+          "got": "sometime in the spring"
+        },
+        {
+          "kind": "question",
+          "label": "asks about the hosting platform",
+          "ok": true
+        },
+        {
+          "kind": "question",
+          "label": "asks about budget",
+          "ok": false
+        },
+        {
+          "kind": "question",
+          "label": "asks for a launch date",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "legal sign-off on sponsor mentions",
+          "ok": true
+        },
+        {
+          "kind": "task",
+          "label": "cover art design",
+          "ok": true
+        }
+      ],
+      "plan": {
+        "campaign_name": "Priya Podcast Launch",
+        "summary": "Produce audio and visual assets for Priya's spring podcast launch, including audiograms, a trailer, and YouTube Shorts, while awaiting final decisions on hosting platform, sponsor legal sign-off, and budget.",
+        "deadline_mention": "sometime in the spring",
+        "deadline": null,
+        "deliverables": [
+          {
+            "name": "4 Instagram Audiograms",
+            "channel": "Instagram",
+            "quantity": 4,
+            "notes": "Cover art design required; sponsor legal sign-off needed if supplement brand mentioned"
+          },
+          {
+            "name": "1 Podcast Trailer Episode",
+            "channel": "Podcast Platform",
+            "quantity": 1,
+            "notes": "Source material for YouTube Shorts clips"
+          },
+          {
+            "name": "6 YouTube Shorts Clips",
+            "channel": "YouTube",
+            "quantity": 6,
+            "notes": "Clipped from trailer episode; cover art design required"
+          }
+        ],
+        "tasks": [
+          {
+            "title": "Schedule and publish podcast trailer and Shorts",
+            "role": "producer",
+            "priority": "medium",
+            "detail": "Upload final assets to selected hosting platform and social channels.",
+            "days_before_deadline": 14,
+            "due_date": null
+          },
+          {
+            "title": "Client review of all audio and visual assets",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Submit drafts for client approval before scheduling or publishing.",
+            "days_before_deadline": 12,
+            "due_date": null
+          },
+          {
+            "title": "Edit and create 4 Instagram audiograms from trailer",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Produce visual audio clips using finalized cover art.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Edit and create 6 YouTube Shorts from trailer",
+            "role": "editor",
+            "priority": "medium",
+            "detail": "Produce vertical video clips using finalized cover art.",
+            "days_before_deadline": 10,
+            "due_date": null
+          },
+          {
+            "title": "Record or finalize podcast trailer episode",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Ensure high-quality audio recording of the trailer segment.",
+            "days_before_deadline": 7,
+            "due_date": null
+          },
+          {
+            "title": "Design podcast cover art",
+            "role": "designer",
+            "priority": "medium",
+            "detail": "Create cover art assets for Instagram and YouTube Shorts.",
+            "days_before_deadline": 5,
+            "due_date": null
+          },
+          {
+            "title": "Confirm podcast hosting platform and budget",
+            "role": "producer",
+            "priority": "high",
+            "detail": "Select hosting provider and finalize budget approval before production begins.",
+            "days_before_deadline": 0,
+            "due_date": null
+          },
+          {
+            "title": "Obtain sponsor legal sign-off for supplement brand mentions",
+            "role": "legal/compliance",
+            "priority": "high",
+            "detail": "Review all draft content for required sponsor disclosures and approvals.",
+            "days_before_deadline": 0,
+            "due_date": null
+          }
+        ],
+        "missing_inputs": [
+          "What is the exact launch date for Priya's podcast?",
+          "Which podcast hosting platform should be used?",
+          "Has the sponsor legal sign-off been finalized?"
+        ],
+        "risks": [
+          "Sponsor legal sign-off delays may impact asset finalization.",
+          "Unclear budget could affect production quality or timeline.",
+          "Lack of confirmed launch date makes scheduling difficult."
+        ]
+      }
+    }
+  ]
+}

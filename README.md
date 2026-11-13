@@ -14,10 +14,11 @@ AgencyFlow AI is a small, local-first operations tool for creative and creator a
 
 | Measure | Result | Evidence |
 |---|---|---|
-| Model accuracy on 5 briefs × 2 live runs | **76/82 checks (93%)** | [evals/RESULTS.md](evals/RESULTS.md) |
-| Schema-valid output | 10/10, all on the first attempt | same |
+| Model accuracy, live runs | **93% → 98%** on the 5 tuned briefs after prompt and rule fixes; **89% on 2 held-out briefs** | [evals/RESULTS.md](evals/RESULTS.md) |
+| 4B vs 7B on the same evaluation | 7B no better on this sample (95% tuned, 89% held-out), and larger; 4B kept as default | [Measure, improve, re-measure](#measure-improve-re-measure) |
+| Schema-valid output | 31/31 eval runs, all on the first attempt | same |
 | Time per plan (qwen3.5:4b, GTX 1650 4 GB) | 65–111 s | eval runs 65–92 s; brand-deal runs in the app 98–111 s |
-| Backend tests | 30 passing (model and webhook mocked) | `tests/` |
+| Backend tests | 33 passing (model and webhook mocked) | `tests/` |
 | End-to-end, live | model → edit → approve → n8n stores tasks → read back; outage and retry; replay ignored; tampered resend 409 | video + below |
 
 ## Two-minute demo
@@ -94,8 +95,8 @@ All settings are environment variables, listed in [.env.example](.env.example). 
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install pytest httpx
-.\.venv\Scripts\python.exe -m pytest -q              # 30 backend tests, model and webhook mocked
-.\.venv\Scripts\python.exe evals\run_eval.py 2       # live: 5 briefs x 2 runs, about 15 minutes
+.\.venv\Scripts\python.exe -m pytest -q                         # 33 backend tests, model and webhook mocked
+.\.venv\Scripts\python.exe evals\run_eval.py 2 --label my-run   # live: 7 briefs x 2 runs, about 20 minutes
 ```
 
 The tests cover:
@@ -109,15 +110,29 @@ The tests cover:
 - the stored-task read-back
 - access codes, webhook URL restrictions and the eval scorer
 
-The evaluation scores live output against facts written by hand from each brief: deliverable quantities, deadline handling, keeping the client's timing words, the right client questions and essential tasks. The current result is **76/82 (93%)**. The misses are real and repeatable at temperature 0:
+### Measure, improve, re-measure
 
-| Brief | Miss |
-|---|---|
-| Creator brand deal | Counts 2 TikToks as 1 (reads "TikTok live" as a livestream) |
-| YouTube series launch | Leaves `deadline_mention` empty instead of keeping "January" (it still asks for the date) |
-| Messy catering email | Doesn't ask about pricing as a client question (it raises pricing only as a risk) |
+The evaluation scores live output against facts written by hand from each brief: deliverable quantities, deadline handling, keeping the client's timing words, the right client questions and essential tasks.
 
-Other weaknesses seen in single runs: generic role assignments, and in one YouTube run the task offsets put client review before filming. That is why every plan is a draft a person must review. The review diff records how much they had to change.
+| Run | Tuned briefs 01–05 | Held-out briefs 06–07 | Valid on 1st try | Avg time |
+|---|---|---|---|---|
+| qwen3.5:4b, original prompt (baseline) | 76/82 (93%) | not run | 10/10 | 79 s |
+| **qwen3.5:4b, improved** (default) | **80/82 (98%)** | **34/38 (89%)** | 14/14 | 83 s |
+| qwen2.5:7b-instruct, improved | 39/41 (95%) | 17/19 (89%) | 7/7 | 80 s |
+
+1. **Measured.** The baseline missed three things repeatedly: it counted "2 TikToks… first TikTok live" as one livestream, it didn't turn "pricing isn't final" into a client question, and it dropped "in January" as the timing words.
+2. **Improved.** Three prompt rules target those misses ("live by" means published; anything unconfirmed becomes a question; always quote timing words). [`brief_checks.py`](brief_checks.py) adds deterministic help. It copies the client's timing words when the model drops them, and it compares numbers stated in the brief with the plan's deliverables. Mismatches are shown to the reviewer and must be confirmed again at approval.
+3. **Re-measured,** with two **held-out** briefs whose expectations were [committed before any tuning](https://github.com/mathesonlj16-eng/AgencyFlow-AI/commit/ca9980d). The tuned set rose from 93% to 98%. The held-out score (89%) is the honest estimate for new briefs, and I did not tune on its misses: the model quoted "before then" instead of the date, and it didn't ask about the TBD budget.
+
+**Model choice.** The 7B model fixed the TikTok count, but on the held-out bakery brief it left the stated date unset and quoted words that aren't in the brief ("before the holidays"). It also counted episodes wrong on the YouTube brief. It needs 4.7 GB instead of 3.3 GB and, on this laptop, isn't faster. On this small sample it isn't more accurate either, so the 4B stays the default. The sample is 7 briefs, 1 to 2 runs each, so treat the differences as indicative, not significant.
+
+Still not caught: the 4B's TikTok miscount survives the prompt fix. The count check flags it in the UI ("The brief asks for 2 TikToks; the plan has 1"), which is the point of keeping a person in the loop.
+
+![Count check warning](docs/screenshots/10-count-check-warning.png)
+
+Full per-run detail is in [evals/RESULTS.md](evals/RESULTS.md).
+
+A possible next rule: reject a `deadline_mention` that doesn't appear word for word in the brief. I haven't added it, because the failure that motivated it came from a held-out brief, and fixing it would quietly turn the held-out set into a tuned one.
 
 ## Status
 
@@ -130,7 +145,8 @@ Other weaknesses seen in single runs: generic role assignments, and in one YouTu
 - Duplicate detection, SQLite persistence with in-place migration, history and a per-plan audit trail
 - n8n workflow: validation, replay and tamper protection, idempotent storage in an n8n data table, a read-back webhook, and a disabled outside write
 - Handoff failure handling with retry, a concurrent-send lock and stale-claim recovery
-- Live accuracy evaluation with hand-written expectations
+- Live accuracy evaluation with hand-written expectations, a frozen baseline, held-out briefs and a 4B vs 7B comparison
+- Deterministic brief checks: timing-word recovery and count warnings shown at review and approval
 
 **Not built**
 - Writes to a real outside task tool (Asana, ClickUp, Notion). The node exists but stays disabled until an owner approves a destination and credentials.
@@ -152,6 +168,7 @@ Other weaknesses seen in single runs: generic role assignments, and in one YouTu
 | `app.py` | FastAPI routes, SQLite persistence, events, approval and handoff state machine, review and stats endpoints, n8n read-back |
 | `ai_client.py` | Ollama / OpenAI-compatible adapter, schema-constrained calls, repair retry, ISO-date recovery |
 | `plan.py` | Pydantic plan schema, scheduler, system prompt |
+| `brief_checks.py` | Deterministic brief-vs-plan checks: timing-word recovery, stated-count warnings |
 | `review_diff.py` | AI draft vs approved plan comparison and aggregate stats |
 | `static/` | Single-page UI (plain HTML, CSS and JS; no build step) |
 | `n8n/agencyflow-reviewed-webhook.json` | Importable n8n workflow (receiver, data-table storage, read-back) |

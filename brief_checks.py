@@ -53,14 +53,23 @@ def stated_counts(brief: str) -> dict[str, int]:
     return counts
 
 
+DISPLAY = {"tiktok": ("TikTok", "TikToks"), "story": ("story", "stories"), "email": ("email", "emails")}
+
+
+def _label(asset: str, n: int) -> str:
+    one, many = DISPLAY.get(asset, (asset, asset + "s"))
+    return one if n == 1 else many
+
+
 def quantity_warnings(brief: str, plan: dict) -> list[str]:
     warnings = []
     for asset, expected in stated_counts(brief).items():
         stems = ASSETS[asset]
+        name = _label(asset, expected)
         matching = [d for d in plan.get("deliverables", []) if any(s in d.get("name", "").lower() for s in stems)]
         got = sum(int(d.get("quantity", 0)) for d in matching)
         if matching and got != expected:
-            warnings.append(f"The brief asks for {expected} {asset}{'s' if expected != 1 else ''}; the plan has {got}.")
+            warnings.append(f"The brief asks for {expected} {name}; the plan has {got}.")
         elif not matching and asset in ("tiktok", "reel", "short", "story", "carousel", "audiogram", "trailer", "email"):
-            warnings.append(f"The brief asks for {expected} {asset}{'s' if expected != 1 else ''}; no deliverable mentions it.")
+            warnings.append(f"The brief asks for {expected} {name}; no deliverable mentions it.")
     return warnings

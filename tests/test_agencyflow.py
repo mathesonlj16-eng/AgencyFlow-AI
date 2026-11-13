@@ -119,7 +119,7 @@ def test_quantity_warning_flags_miscount_and_clears_after_fix(client):
                             {"name": "Instagram Stories", "channel": "Instagram", "quantity": 3, "notes": ""}]
     with patch.object(app, "generate_plan", return_value=fake_generation(plan)):
         run = client.post("/api/analyze", json={"brief": brief, "client_name": "X"}).json()["run"]
-    assert run["warnings"] == ["The brief asks for 2 tiktoks; the plan has 1."]
+    assert run["warnings"] == ["The brief asks for 2 TikToks; the plan has 1."]
     plan["deliverables"][0] = {"name": "TikTok video", "channel": "TikTok", "quantity": 2, "notes": ""}
     assert client.put(f"/api/runs/{run['id']}/plan", json=plan).json()["run"]["warnings"] == []
 
