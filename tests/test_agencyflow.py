@@ -89,6 +89,18 @@ def test_quoted_iso_date_is_recovered_but_relative_words_are_not():
     assert normalize_model_response(json.dumps(two)).deadline is None  # ambiguous: a person decides
 
 
+def test_eval_scorer_counts_quantities_and_flags_misses():
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "evals"))
+    from run_eval import score
+    exp = {"quantities": [{"label": "3 reels", "match": "reel", "expect": 3}, {"label": "2 stories", "match": "stor", "expect": 2}],
+           "deadline": None, "deadline_mention": "friday",
+           "questions": [{"label": "date", "match": "date"}], "tasks": [{"label": "review", "match": "review|approv"}]}
+    checks = {c["label"]: c["ok"] for c in score(Plan.model_validate(TEST_PLAN).model_dump(), exp)}
+    assert checks["3 reels"] is True and checks["2 stories"] is False
+    assert checks["date"] is True and checks["review"] is False  # TEST_PLAN has no review task
+
+
 def test_schema_sent_to_model_excludes_server_fields():
     schema = model_output_schema()
     assert "due_date" not in schema["$defs"]["Task"]["properties"]
