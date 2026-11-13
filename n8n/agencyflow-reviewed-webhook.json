@@ -1,6 +1,6 @@
 {
   "id": "AgFlowReceiverV2",
-  "name": "AgencyFlow AI - Approved Plan Receiver (stores tasks locally, external writes disabled)",
+  "name": "AgencyFlow AI - Approved plan receiver, local task store, opt-in Notion sync",
   "nodes": [
     {
       "parameters": {
@@ -9,7 +9,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "5e4ab1d1-47bd-42d3-9d29-3284a1b5f90d",
+      "id": "a0e21a25-0677-5993-bdf7-d2c79720c540",
       "name": "Receive approved plan",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -21,9 +21,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Validate the human-approved payload and block replays by event_id.\n// Seen event ids live in workflow static data, which n8n persists for production (active) executions.\nconst body = $input.first().json.body ?? {};\nconst errors = [];\nif (body.schema_version !== 'agencyflow.v1') errors.push('unsupported schema_version');\nif (typeof body.event_id !== 'string' || !/^af-\\d+-[0-9a-f]{12}$/.test(body.event_id)) errors.push('missing or malformed event_id');\nif (!body.reviewed_at) errors.push('plan was not human-approved (reviewed_at missing)');\nconst tasks = body.plan?.tasks;\nif (!Array.isArray(tasks) || tasks.length === 0) errors.push('plan has no tasks');\nif (errors.length) {\n  return [{ json: { outcome: 'rejected', http: 422, response: { status: 'rejected', error: errors.join('; ') } } }];\n}\n\n// Cheap content fingerprint (djb2) so a reused event_id with different content is caught.\nconst text = JSON.stringify(body.plan);\nlet h = 5381;\nfor (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;\nconst fingerprint = h.toString(16);\n\nconst store = $getWorkflowStaticData('global');\nstore.seen = store.seen ?? {};\nconst prev = store.seen[body.event_id];\nif (prev && prev.fingerprint === fingerprint) {\n  return [{ json: { outcome: 'duplicate', http: 200, response: { status: 'duplicate_ignored', duplicate: true, event_id: body.event_id, first_received_at: prev.at, external_actions: 'none' } } }];\n}\nif (prev) {\n  return [{ json: { outcome: 'conflict', http: 409, response: { status: 'conflict', error: 'event_id already used for a different plan', event_id: body.event_id } } }];\n}\nstore.seen[body.event_id] = { fingerprint, at: new Date().toISOString(), tasks: tasks.length };\nconst ids = Object.keys(store.seen);\nif (ids.length > 500) for (const id of ids.slice(0, ids.length - 500)) delete store.seen[id];\n\nreturn [{ json: { outcome: 'accepted', http: 200, event: body } }];"
+        "jsCode": "\n// Validate the human-approved payload and block replays by event_id (workflow static data).\nconst body = $input.first().json.body ?? {};\nconst errors = [];\nif (body.schema_version !== 'agencyflow.v1') errors.push('unsupported schema_version');\nif (typeof body.event_id !== 'string' || !/^af-\\d+-[0-9a-f]{12}$/.test(body.event_id)) errors.push('missing or malformed event_id');\nif (!body.reviewed_at) errors.push('plan was not human-approved (reviewed_at missing)');\nconst tasks = body.plan?.tasks;\nif (!Array.isArray(tasks) || tasks.length === 0) errors.push('plan has no tasks');\nif (errors.length) return [{ json: { ok: false, http: 422, response: { status: 'rejected', error: errors.join('; ') } } }];\nconst text = JSON.stringify(body.plan);\nlet h = 5381; for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;\nconst fingerprint = h.toString(16);\nconst store = $getWorkflowStaticData('global'); store.seen = store.seen ?? {};\nconst prev = store.seen[body.event_id];\nif (prev && prev.fingerprint === fingerprint)\n  return [{ json: { ok: false, http: 200, response: { status: 'duplicate_ignored', duplicate: true, event_id: body.event_id, first_received_at: prev.at, external_actions: 'none' } } }];\nif (prev) return [{ json: { ok: false, http: 409, response: { status: 'conflict', error: 'event_id already used for a different plan', event_id: body.event_id } } }];\nstore.seen[body.event_id] = { fingerprint, at: new Date().toISOString(), tasks: tasks.length };\nconst ids = Object.keys(store.seen); if (ids.length > 500) for (const id of ids.slice(0, ids.length - 500)) delete store.seen[id];\nreturn [{ json: { ok: true, event: body } }];"
       },
-      "id": "11e8b829-70b2-4fa9-bfc6-06ad1f82a9c7",
+      "id": "1ccceefb-fd40-5098-bb90-a6d8c7369658",
       "name": "Validate + replay check",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -38,18 +38,18 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
+            "typeValidation": "loose",
             "version": 2
           },
           "conditions": [
             {
-              "id": "c5b0a3a2-1f1e-4b5f-9b55-6a1d3b3c7f01",
-              "leftValue": "={{ $json.outcome }}",
-              "rightValue": "accepted",
+              "id": "eb7bccb4-c321-530b-8e27-b1b1d55bef53",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
               "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
               }
             }
           ],
@@ -57,7 +57,7 @@
         },
         "options": {}
       },
-      "id": "a7f3e8c1-2b44-4c1e-8f0e-1c2d3e4f5a60",
+      "id": "d36da580-629d-57f1-88e0-8baf1350a1ce",
       "name": "New approved plan?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -71,16 +71,16 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify($json.response) }}",
         "options": {
-          "responseCode": "={{ $json.http }}"
+          "responseCode": "={{ $json.http || 200 }}"
         }
       },
-      "id": "d4e6f8a0-5c7d-4e9f-9a3b-4c5d6e7f8091",
+      "id": "bbc29dcd-b1c8-56ba-ad40-7dcf075397f3",
       "name": "Respond duplicate / rejected",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
         660,
-        420
+        440
       ]
     },
     {
@@ -100,6 +100,10 @@
             },
             {
               "name": "campaign",
+              "type": "string"
+            },
+            {
+              "name": "client",
               "type": "string"
             },
             {
@@ -129,6 +133,26 @@
             {
               "name": "received_at",
               "type": "string"
+            },
+            {
+              "name": "notion_page_id",
+              "type": "string"
+            },
+            {
+              "name": "notion_url",
+              "type": "string"
+            },
+            {
+              "name": "notion_status",
+              "type": "string"
+            },
+            {
+              "name": "notion_error",
+              "type": "string"
+            },
+            {
+              "name": "notion_synced_at",
+              "type": "string"
             }
           ]
         },
@@ -143,11 +167,12 @@
       "position": [
         660,
         200
-      ]
+      ],
+      "executeOnce": true
     },
     {
       "parameters": {
-        "jsCode": "// One item per approved task. external_ref is stable, so storing it twice is impossible (upsert below).\nconst e = $('New approved plan?').first().json.event;\nconst at = new Date().toISOString();\nreturn e.plan.tasks.map((t, i) => ({ json: {\n  external_ref: `${e.event_id}#${i + 1}`, event_id: e.event_id, campaign: e.plan.campaign_name,\n  title: t.title, assignee_role: t.role, priority: t.priority, due_date: t.due_date ?? '',\n  status: 'To do', description: t.detail ?? '', received_at: at,\n} }));"
+        "jsCode": "\n// One item per approved task. external_ref is stable, so storing it twice is impossible (upsert below).\nconst e = $('New approved plan?').first().json.event;\nconst at = new Date().toISOString();\nreturn e.plan.tasks.map((t, i) => ({ json: {\n  external_ref: `${e.event_id}#${i + 1}`, event_id: e.event_id, campaign: e.plan.campaign_name, client: e.client_name ?? '',\n  title: t.title, assignee_role: t.role, priority: t.priority, due_date: t.due_date ?? '',\n  status: 'To do', description: t.detail ?? '', received_at: at,\n} }));"
       },
       "id": "706afe03-8df1-5819-9fb4-d43e100f8215",
       "name": "Prepare tracker cards",
@@ -196,41 +221,21 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://example.invalid/replace-with-your-project-tool-api",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($('Prepare tracker cards').all().map(i => i.json)) }}",
-        "options": {}
-      },
-      "id": "c3d5e7f9-4b6c-4d8e-8f2a-3b4c5d6e7f80",
-      "name": "Create tasks in project tool (DISABLED until approved)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1320,
-        200
-      ],
-      "disabled": true,
-      "notes": "External write. Kept disabled on purpose. Enable only after the owner approves the destination, credentials and receiver-side de-duplication.",
-      "executeOnce": true
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: 'accepted', duplicate: false, event_id: $('New approved plan?').first().json.event.event_id, campaign: $('New approved plan?').first().json.event.plan.campaign_name, cards_prepared: $('Prepare tracker cards').all().length, tasks_stored: $('Save tasks (n8n data table, upsert)').all().length, stored_in: 'n8n data table agencyflow_tasks', external_actions: 'disabled (dry run)' }) }}",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', duplicate: false, event_id: $('New approved plan?').first().json.event.event_id, campaign: $('New approved plan?').first().json.event.plan.campaign_name, cards_prepared: $('Prepare tracker cards').all().length, tasks_stored: $('Save tasks (n8n data table, upsert)').all().length, stored_in: 'n8n data table agencyflow_tasks', external_actions: 'none (Notion sync is a separate, opt-in step)' }) }}",
         "options": {
           "responseCode": 200
         }
       },
-      "id": "4fe98cd6-a231-4d3d-a154-d065a841b3d8",
+      "id": "2b7e9bdb-6141-58ac-8a7b-3eea8832a311",
       "name": "Acknowledge accepted",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1540,
+        1320,
         200
-      ]
+      ],
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -269,6 +274,10 @@
               "type": "string"
             },
             {
+              "name": "client",
+              "type": "string"
+            },
+            {
               "name": "title",
               "type": "string"
             },
@@ -295,6 +304,26 @@
             {
               "name": "received_at",
               "type": "string"
+            },
+            {
+              "name": "notion_page_id",
+              "type": "string"
+            },
+            {
+              "name": "notion_url",
+              "type": "string"
+            },
+            {
+              "name": "notion_status",
+              "type": "string"
+            },
+            {
+              "name": "notion_error",
+              "type": "string"
+            },
+            {
+              "name": "notion_synced_at",
+              "type": "string"
             }
           ]
         },
@@ -309,7 +338,8 @@
       "position": [
         220,
         620
-      ]
+      ],
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -348,6 +378,968 @@
       "position": [
         660,
         620
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agencyflow-notion-setup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8918410b-7afb-524d-b5b2-b9c91c983df7",
+      "name": "Notion setup (owner)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        960
+      ],
+      "webhookId": "3c1f9a10-2b7e-4d55-8e21-6a9b0c4d7e10"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "agencyflow_settings",
+        "columns": {
+          "column": [
+            {
+              "name": "key",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "b74f2bc8-6883-5ab2-be5c-8435951825ed",
+      "name": "Ensure settings table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        960
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ALLOWED = ['https://api.notion.com/v1', 'http://notion-mock:8787/v1'];  // never send the token anywhere else\nfunction settingsFrom(rows) {\n  const s = Object.fromEntries(rows.filter(r => r.key).map(r => [r.key, r.value]));\n  return { notion_enabled: s.notion_enabled === 'true', notion_data_source_id: s.notion_data_source_id || '',\n           notion_api_base: s.notion_api_base || 'https://api.notion.com/v1', notion_version: s.notion_version || '2025-09-03' };\n}\n\nconst b = $('Notion setup (owner)').first().json.body ?? {};\nconst api = b.api_base || 'https://api.notion.com/v1';\nconst version = b.notion_version || '2025-09-03';\nconst fail = (msg) => [{ json: { ok: false, http: 422, response: { status: 'rejected', error: msg } } }];\nif (!ALLOWED.includes(api)) return fail('api_base is not an allowed Notion endpoint');\nconst norm = (id) => String(id || '').replace(/-/g, '');\nif (b.data_source_id && !/^[0-9a-f]{32}$/i.test(norm(b.data_source_id))) return fail('data_source_id must be a Notion id');\nif (!b.data_source_id && !/^[0-9a-f]{32}$/i.test(norm(b.parent_page_id))) return fail('parent_page_id (a page shared with the integration) or data_source_id is required');\nreturn [{ json: { ok: true, create: !b.data_source_id, parent_page_id: b.parent_page_id, data_source_id: b.data_source_id || '',\n                  enable: b.enable === true, settings: { notion_api_base: api, notion_version: version } } }];"
+      },
+      "id": "64fdebf0-7d9d-5c69-b3bc-eb21360b8528",
+      "name": "Check setup request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c5ea6946-207f-5b63-a984-0f3c701df68b",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "71d2b7e6-100b-5103-b3f9-3ce0ad9f02b7",
+      "name": "Setup request valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.http || 200 }}"
+        }
+      },
+      "id": "5461f398-a256-5535-b078-e932d8b066ef",
+      "name": "Respond setup rejected",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        1100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "91884009-3074-5476-b80c-ea071928e2ec",
+              "leftValue": "={{ $json.create }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "df80960e-fb5f-59fa-a6e6-2668131fbd86",
+      "name": "Create a new data source?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.settings.notion_api_base }}/databases",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "={{ $json.settings.notion_version }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 350
+            }
+          },
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ parent: { type: 'page_id', page_id: $json.parent_page_id }, title: [{ type: 'text', text: { content: 'AgencyFlow AI tasks (fictional demo)' } }], initial_data_source: { properties: { 'Name': { title: {} }, 'External ref': { rich_text: {} }, 'Event ID': { rich_text: {} }, 'Campaign': { rich_text: {} }, 'Client': { rich_text: {} }, 'Role': { rich_text: {} }, 'Priority': { select: { options: [{ name: 'high', color: 'red' }, { name: 'medium', color: 'yellow' }, { name: 'low', color: 'gray' }] } }, 'Due': { date: {} }, 'Description': { rich_text: {} }, 'Source': { rich_text: {} }, 'Status': { select: { options: [{ name: 'To do', color: 'default' }, { name: 'In progress', color: 'blue' }, { name: 'Done', color: 'green' }] } } } } }) }}"
+      },
+      "id": "0c34dee5-394e-5848-a845-c2607e132641",
+      "name": "Create sandbox database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        840
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AgFlowNotionCred1",
+          "name": "AgencyFlow Notion (sandbox)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Check setup request').first().json.settings.notion_api_base }}/databases/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "={{ $('Check setup request').first().json.settings.notion_version }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 350
+            }
+          },
+          "timeout": 20000
+        }
+      },
+      "id": "50db7690-f137-57c6-9584-26a6fe9eaf16",
+      "name": "Look up data source id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        840
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AgFlowNotionCred1",
+          "name": "AgencyFlow Notion (sandbox)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "\nfunction describeError(j) {\n  const e = j && j.error; if (!e) return null;\n  const raw = typeof e === 'string' ? e : [e.message, e.description].filter(Boolean).join(' ');\n  const status = Number((typeof e === 'object' && (e.httpCode || e.status)) || (raw.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1]) || null;\n  // Notion's error JSON often arrives escaped inside n8n's message (\\\"code\\\":\\\"rate_limited\\\").\n  const code = (raw.match(/\\\\?\"code\\\\?\"\\s*:\\s*\\\\?\"([a-z_]+)/) || [])[1] || null;\n  const notionMsg = (raw.match(/\\\\?\"message\\\\?\"\\s*:\\s*\\\\?\"([^\"\\\\]+)/) || [])[1] || null;\n  const friendly = {\n    unauthorized: 'Notion rejected the credential. Reconnect the AgencyFlow Notion integration in n8n.',\n    restricted_resource: 'The Notion integration lacks permission. Share the AgencyFlow data source with it.',\n    object_not_found: 'Notion cannot see the data source or page. Share it with the integration.',\n    rate_limited: 'Notion rate limit reached after retries. Wait a minute and retry the failed tasks.',\n    validation_error: 'Notion rejected a field value (validation error).',\n  }[code] || (status === 429 ? 'Notion rate limit reached after retries.' : status >= 500 ? 'Notion had a server error. Retry the failed tasks.' : null);\n  return { status, code, message: (friendly || notionMsg || raw || 'Unknown Notion error').slice(0, 300) };\n}\n\nconst req = $('Check setup request').first().json;\nlet dsId = req.data_source_id;\nif (req.create) {\n  const looked = $('Look up data source id').first().json;\n  const err = describeError($('Create sandbox database').first().json) || describeError(looked);\n  if (err) return [{ json: { ok: false, http: 502, response: { status: 'setup_failed', error: err.message } } }];\n  dsId = (looked.data_sources || [])[0]?.id || '';\n  if (!dsId) return [{ json: { ok: false, http: 502, response: { status: 'setup_failed', error: 'Notion returned no data source id' } } }];\n}\nconst rows = { notion_data_source_id: dsId, notion_api_base: req.settings.notion_api_base,\n               notion_version: req.settings.notion_version, notion_enabled: String(req.enable) };\nreturn Object.entries(rows).map(([key, value]) => ({ json: { ok: true, key, value } }));"
+      },
+      "id": "9317a8aa-b1f0-5ba7-8bac-0a8df28ac72e",
+      "name": "Settings to store",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a22d03d1-ada9-5f7b-8006-3b5dbfb42316",
+              "leftValue": "={{ $input.first().json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "802e9744-e042-5c79-b0a6-1fac12242fda",
+      "name": "Setup succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "agencyflow_settings"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "key": "={{ $json.key }}",
+            "value": "={{ $json.value }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "key",
+              "displayName": "key",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "type": "string",
+              "display": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10819c9a-fb7e-56ec-982f-5d4510d78136",
+      "name": "Store settings",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'configured', data_source_id: $('Settings to store').all().find(i => i.json.key === 'notion_data_source_id').json.value, enabled: $('Settings to store').all().find(i => i.json.key === 'notion_enabled').json.value === 'true' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "e78214c8-5c58-506f-a9ed-7234985acd9d",
+      "name": "Respond setup done",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        900
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.http || 200 }}"
+        }
+      },
+      "id": "5e0018a7-1b58-5e3f-9846-72cb821bda7d",
+      "name": "Respond setup failed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agencyflow-notion-sync",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d422f31b-a629-5e17-a4d9-5931fece8384",
+      "name": "Notion sync request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1400
+      ],
+      "webhookId": "5e7a2c44-9d1b-4f60-b3a8-7c2e1f0d9a21"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "agencyflow_settings",
+        "columns": {
+          "column": [
+            {
+              "name": "key",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "53d8515b-9230-5fbd-9d8d-ff5660208ce4",
+      "name": "Ensure settings table (sync)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        1400
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "agencyflow_settings"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "030e7ccc-2251-5498-a301-8ae236dad719",
+      "name": "Read settings",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        1400
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ALLOWED = ['https://api.notion.com/v1', 'http://notion-mock:8787/v1'];  // never send the token anywhere else\nfunction settingsFrom(rows) {\n  const s = Object.fromEntries(rows.filter(r => r.key).map(r => [r.key, r.value]));\n  return { notion_enabled: s.notion_enabled === 'true', notion_data_source_id: s.notion_data_source_id || '',\n           notion_api_base: s.notion_api_base || 'https://api.notion.com/v1', notion_version: s.notion_version || '2025-09-03' };\n}\n\nconst b = $('Notion sync request').first().json.body ?? {};\nconst s = settingsFrom($input.all().map(i => i.json));\nconst no = (http, status, error) => [{ json: { ok: false, http, response: { status, error } } }];\nif (typeof b.event_id !== 'string' || !/^af-\\d+-[0-9a-f]{12}$/.test(b.event_id)) return no(422, 'rejected', 'missing or malformed event_id');\nif (!s.notion_data_source_id) return no(409, 'not_configured', 'Notion sync is not set up. The owner runs scripts/notion-setup.ps1 first.');\nif (!s.notion_enabled) return no(409, 'disabled', 'Notion sync is configured but disabled (external writes are off by default).');\nif (!ALLOWED.includes(s.notion_api_base)) return no(409, 'not_configured', 'Configured Notion endpoint is not allowed.');\nreturn [{ json: { ok: true, event_id: b.event_id, settings: s } }];"
+      },
+      "id": "b655d40c-82ed-5c10-9ad7-fb4e8ac1ca6c",
+      "name": "Check sync request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        1400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b3a521a6-38e2-5960-891b-0838b806e8dc",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c834b27e-8bc2-51e6-a2ec-9399b3516ee9",
+      "name": "Sync allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        1400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.http || 200 }}"
+        }
+      },
+      "id": "49795342-86b3-5ca9-931e-d0f9b555f4d8",
+      "name": "Respond sync refused",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1540
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "agencyflow_tasks",
+        "columns": {
+          "column": [
+            {
+              "name": "external_ref",
+              "type": "string"
+            },
+            {
+              "name": "event_id",
+              "type": "string"
+            },
+            {
+              "name": "campaign",
+              "type": "string"
+            },
+            {
+              "name": "client",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "assignee_role",
+              "type": "string"
+            },
+            {
+              "name": "priority",
+              "type": "string"
+            },
+            {
+              "name": "due_date",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "name": "received_at",
+              "type": "string"
+            },
+            {
+              "name": "notion_page_id",
+              "type": "string"
+            },
+            {
+              "name": "notion_url",
+              "type": "string"
+            },
+            {
+              "name": "notion_status",
+              "type": "string"
+            },
+            {
+              "name": "notion_error",
+              "type": "string"
+            },
+            {
+              "name": "notion_synced_at",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "dd257baf-7bed-5e32-a7f1-33ad6e5f02ef",
+      "name": "Ensure task table exists (sync)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1340
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "agencyflow_tasks"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "event_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Check sync request').first().json.event_id }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "8355f9ab-0c0b-5952-9dd2-60d366c260ce",
+      "name": "Read approved task rows",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        1340
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Only tasks that passed the approval receiver and were stored locally can reach Notion.\nconst req = $('Check sync request').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r.external_ref && r.event_id === req.event_id);\nif (!rows.length) return [{ json: { ok: false, http: 404, response: { status: 'not_found', error: 'No approved, stored tasks for this event_id. Send the plan to n8n first.' } } }];\nconst rt = (s) => ({ rich_text: [{ type: 'text', text: { content: String(s ?? '').slice(0, 1900) } }] });\nreturn rows.map(r => ({ json: { ok: true, settings: req.settings, external_ref: r.external_ref, row: r, properties: {\n  'Name': { title: [{ type: 'text', text: { content: String(r.title).slice(0, 1900) } }] },\n  'External ref': rt(r.external_ref), 'Event ID': rt(r.event_id), 'Campaign': rt(r.campaign), 'Client': rt(r.client),\n  'Role': rt(r.assignee_role), 'Priority': { select: { name: r.priority } },\n  'Due': { date: r.due_date ? { start: r.due_date } : null }, 'Description': rt(r.description),\n  'Source': rt('AgencyFlow AI (independent fictional demo)'),\n} } }));"
+      },
+      "id": "b2d36637-0066-5180-b514-394c60d83226",
+      "name": "Build Notion pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        1340
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "18445043-8edd-596a-8f82-da59a41f921e",
+              "leftValue": "={{ $input.first().json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "55758040-1cc7-5fb6-b861-84daffc96849",
+      "name": "Any tasks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        1340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.http || 200 }}"
+        }
+      },
+      "id": "7d4982bf-dbed-58a1-9068-fb6e77f0e481",
+      "name": "Respond no tasks",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        1480
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.settings.notion_api_base }}/data_sources/{{ $json.settings.notion_data_source_id }}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "={{ $json.settings.notion_version }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 350
+            }
+          },
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filter: { property: 'External ref', rich_text: { equals: $json.external_ref } }, page_size: 5 }) }}"
+      },
+      "id": "9a2a013b-e624-59f0-8dae-581fc220e4d8",
+      "name": "Find page by external_ref",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        1280
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AgFlowNotionCred1",
+          "name": "AgencyFlow Notion (sandbox)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "\nfunction describeError(j) {\n  const e = j && j.error; if (!e) return null;\n  const raw = typeof e === 'string' ? e : [e.message, e.description].filter(Boolean).join(' ');\n  const status = Number((typeof e === 'object' && (e.httpCode || e.status)) || (raw.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1]) || null;\n  // Notion's error JSON often arrives escaped inside n8n's message (\\\"code\\\":\\\"rate_limited\\\").\n  const code = (raw.match(/\\\\?\"code\\\\?\"\\s*:\\s*\\\\?\"([a-z_]+)/) || [])[1] || null;\n  const notionMsg = (raw.match(/\\\\?\"message\\\\?\"\\s*:\\s*\\\\?\"([^\"\\\\]+)/) || [])[1] || null;\n  const friendly = {\n    unauthorized: 'Notion rejected the credential. Reconnect the AgencyFlow Notion integration in n8n.',\n    restricted_resource: 'The Notion integration lacks permission. Share the AgencyFlow data source with it.',\n    object_not_found: 'Notion cannot see the data source or page. Share it with the integration.',\n    rate_limited: 'Notion rate limit reached after retries. Wait a minute and retry the failed tasks.',\n    validation_error: 'Notion rejected a field value (validation error).',\n  }[code] || (status === 429 ? 'Notion rate limit reached after retries.' : status >= 500 ? 'Notion had a server error. Retry the failed tasks.' : null);\n  return { status, code, message: (friendly || notionMsg || raw || 'Unknown Notion error').slice(0, 300) };\n}\n\n// Never create when we could not confirm the page is absent: that is how duplicates happen.\nconst built = $('Build Notion pages').all();\nreturn $input.all().map((it, i) => {\n  const b = built[i].json, err = describeError(it.json);\n  if (err) return { json: { ...b, action: 'hold', find_error: err } };\n  const found = it.json.results || [];\n  if (found.length) return { json: { ...b, action: 'update', page_id: found[0].id, duplicates_seen: found.length } };\n  return { json: { ...b, action: 'create' } };\n});"
+      },
+      "id": "7488e9ed-015e-5038-bcfd-2a7302e028a8",
+      "name": "Create, update or hold",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.action === 'update' ? 'PATCH' : 'POST' }}",
+        "url": "={{ $json.settings.notion_api_base }}/{{ $json.action === 'create' ? 'pages' : $json.action === 'update' ? 'pages/' + $json.page_id : 'data_sources/' + $json.settings.notion_data_source_id + '/query' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "={{ $json.settings.notion_version }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 350
+            }
+          },
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.action === 'hold' ? { filter: { property: 'External ref', rich_text: { equals: '__agencyflow_hold__' } }, page_size: 1 } : $json.action === 'create' ? { parent: { type: 'data_source_id', data_source_id: $json.settings.notion_data_source_id }, properties: Object.assign({}, $json.properties, { 'Status': { select: { name: 'To do' } } }) } : { properties: $json.properties }) }}"
+      },
+      "id": "1e7e3db5-8cf0-5efb-a7c3-2d99bf7d2821",
+      "name": "Write page (create / update)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        1280
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AgFlowNotionCred1",
+          "name": "AgencyFlow Notion (sandbox)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Check sync request').first().json.settings.notion_api_base }}/data_sources/{{ $('Check sync request').first().json.settings.notion_data_source_id }}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "={{ $('Check sync request').first().json.settings.notion_version }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 350
+            }
+          },
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filter: { property: 'Event ID', rich_text: { equals: $('Check sync request').first().json.event_id } }, page_size: 100 }) }}"
+      },
+      "id": "4af855b4-3f46-5ee3-a295-01d79e622f93",
+      "name": "Read back pages for this plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        1280
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AgFlowNotionCred1",
+          "name": "AgencyFlow Notion (sandbox)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nfunction describeError(j) {\n  const e = j && j.error; if (!e) return null;\n  const raw = typeof e === 'string' ? e : [e.message, e.description].filter(Boolean).join(' ');\n  const status = Number((typeof e === 'object' && (e.httpCode || e.status)) || (raw.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1]) || null;\n  // Notion's error JSON often arrives escaped inside n8n's message (\\\"code\\\":\\\"rate_limited\\\").\n  const code = (raw.match(/\\\\?\"code\\\\?\"\\s*:\\s*\\\\?\"([a-z_]+)/) || [])[1] || null;\n  const notionMsg = (raw.match(/\\\\?\"message\\\\?\"\\s*:\\s*\\\\?\"([^\"\\\\]+)/) || [])[1] || null;\n  const friendly = {\n    unauthorized: 'Notion rejected the credential. Reconnect the AgencyFlow Notion integration in n8n.',\n    restricted_resource: 'The Notion integration lacks permission. Share the AgencyFlow data source with it.',\n    object_not_found: 'Notion cannot see the data source or page. Share it with the integration.',\n    rate_limited: 'Notion rate limit reached after retries. Wait a minute and retry the failed tasks.',\n    validation_error: 'Notion rejected a field value (validation error).',\n  }[code] || (status === 429 ? 'Notion rate limit reached after retries.' : status >= 500 ? 'Notion had a server error. Retry the failed tasks.' : null);\n  return { status, code, message: (friendly || notionMsg || raw || 'Unknown Notion error').slice(0, 300) };\n}\n\n// Success is only what Notion reads back: right page, right fields. Everything else is reported.\nconst plan = $('Create, update or hold').all().map(i => i.json);\nconst writes = $('Write page (create / update)').all().map(i => i.json);\nconst back = $input.first().json, backErr = describeError(back);\nconst txt = (p) => ((p && (p.title || p.rich_text)) || []).map(t => t.plain_text ?? t.text?.content ?? '').join('');\nconst pages = backErr ? [] : (back.results || []);\nconst now = new Date().toISOString();\nreturn plan.map((t, i) => {\n  const err = t.action === 'hold' ? t.find_error : describeError(writes[i]);\n  const mine = pages.filter(p => txt(p.properties['External ref']) === t.external_ref);\n  const p = mine[0];\n  let status, error = '';\n  if (backErr) { status = 'unverified'; error = 'Could not read Notion back: ' + backErr.message; }\n  else if (!p) { status = 'failed'; error = err ? err.message : 'Page not found in Notion after writing.'; }\n  else {\n    const want = t.row, got = p.properties;\n    const diffs = [];\n    if (txt(got['Name']) !== String(want.title).slice(0, 1900)) diffs.push('title');\n    if ((got['Priority']?.select?.name || '') !== want.priority) diffs.push('priority');\n    if ((got['Due']?.date?.start || '') !== (want.due_date || '')) diffs.push('due date');\n    if (txt(got['Role']) !== String(want.assignee_role)) diffs.push('role');\n    if (txt(got['Campaign']) !== String(want.campaign)) diffs.push('campaign');\n    if (diffs.length) { status = 'mismatch'; error = 'Notion shows different ' + diffs.join(', ') + (err ? ' (' + err.message + ')' : ''); }\n    else status = mine.length > 1 ? 'synced_duplicates' : 'synced';\n    if (mine.length > 1) error = `${mine.length} Notion pages share this external_ref (created outside AgencyFlow?).`;\n  }\n  return { json: { external_ref: t.external_ref, notion_page_id: p?.id || t.row.notion_page_id || '', notion_url: p?.url || t.row.notion_url || '',\n                   notion_status: status, notion_error: error, notion_synced_at: now, _action: t.action, _title: t.row.title } };\n});"
+      },
+      "id": "65fcce0c-c52a-513a-911d-f0fc59ad0418",
+      "name": "Verify and reconcile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "agencyflow_tasks"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "external_ref",
+              "condition": "eq",
+              "keyValue": "={{ $json.external_ref }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "external_ref": "={{ $json.external_ref }}",
+            "notion_page_id": "={{ $json.notion_page_id }}",
+            "notion_url": "={{ $json.notion_url }}",
+            "notion_status": "={{ $json.notion_status }}",
+            "notion_error": "={{ $json.notion_error }}",
+            "notion_synced_at": "={{ $json.notion_synced_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "external_ref",
+              "displayName": "external_ref",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "notion_page_id",
+              "displayName": "notion_page_id",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "notion_url",
+              "displayName": "notion_url",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "notion_status",
+              "displayName": "notion_status",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "notion_error",
+              "displayName": "notion_error",
+              "type": "string",
+              "display": true,
+              "removed": false
+            },
+            {
+              "id": "notion_synced_at",
+              "displayName": "notion_synced_at",
+              "type": "string",
+              "display": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "47092b8f-1f95-5382-b9d5-9cdcc00333f7",
+      "name": "Record sync status",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3080,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const t = $('Verify and reconcile').all().map(i => i.json); const ok = t.filter(x => x.notion_status.startsWith('synced')).length; return JSON.stringify({ status: ok === t.length ? 'complete' : ok ? 'partial' : 'failed', event_id: $('Check sync request').first().json.event_id, synced: ok, total: t.length, tasks: t.map(x => ({ external_ref: x.external_ref, title: x._title, action: x._action, status: x.notion_status, url: x.notion_url, error: x.notion_error })) }); })() }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "268e44f1-c2ca-5045-bfcb-7909460bdaed",
+      "name": "Respond sync result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3300,
+        1280
       ],
       "executeOnce": true
     }
@@ -419,17 +1411,6 @@
       "main": [
         [
           {
-            "node": "Create tasks in project tool (DISABLED until approved)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create tasks in project tool (DISABLED until approved)": {
-      "main": [
-        [
-          {
             "node": "Acknowledge accepted",
             "type": "main",
             "index": 0
@@ -464,6 +1445,316 @@
         [
           {
             "node": "Return stored tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a new data source?": {
+      "main": [
+        [
+          {
+            "node": "Create sandbox database",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Settings to store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create sandbox database": {
+      "main": [
+        [
+          {
+            "node": "Look up data source id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up data source id": {
+      "main": [
+        [
+          {
+            "node": "Settings to store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion setup (owner)": {
+      "main": [
+        [
+          {
+            "node": "Ensure settings table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure settings table": {
+      "main": [
+        [
+          {
+            "node": "Check setup request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check setup request": {
+      "main": [
+        [
+          {
+            "node": "Setup request valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup request valid?": {
+      "main": [
+        [
+          {
+            "node": "Create a new data source?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond setup rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings to store": {
+      "main": [
+        [
+          {
+            "node": "Setup succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Store settings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond setup failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store settings": {
+      "main": [
+        [
+          {
+            "node": "Respond setup done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion sync request": {
+      "main": [
+        [
+          {
+            "node": "Ensure settings table (sync)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure settings table (sync)": {
+      "main": [
+        [
+          {
+            "node": "Read settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read settings": {
+      "main": [
+        [
+          {
+            "node": "Check sync request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check sync request": {
+      "main": [
+        [
+          {
+            "node": "Sync allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync allowed?": {
+      "main": [
+        [
+          {
+            "node": "Ensure task table exists (sync)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond sync refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure task table exists (sync)": {
+      "main": [
+        [
+          {
+            "node": "Read approved task rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read approved task rows": {
+      "main": [
+        [
+          {
+            "node": "Build Notion pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Notion pages": {
+      "main": [
+        [
+          {
+            "node": "Any tasks?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any tasks?": {
+      "main": [
+        [
+          {
+            "node": "Find page by external_ref",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond no tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find page by external_ref": {
+      "main": [
+        [
+          {
+            "node": "Create, update or hold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create, update or hold": {
+      "main": [
+        [
+          {
+            "node": "Write page (create / update)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write page (create / update)": {
+      "main": [
+        [
+          {
+            "node": "Read back pages for this plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read back pages for this plan": {
+      "main": [
+        [
+          {
+            "node": "Verify and reconcile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and reconcile": {
+      "main": [
+        [
+          {
+            "node": "Record sync status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record sync status": {
+      "main": [
+        [
+          {
+            "node": "Respond sync result",
             "type": "main",
             "index": 0
           }

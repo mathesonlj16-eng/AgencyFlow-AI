@@ -42,6 +42,7 @@ RUN_COLUMNS = {  # added after v0.1; migrated in place on startup
     "model": "TEXT", "attempts": "INTEGER", "latency_ms": "INTEGER",
     "handoff_attempts": "INTEGER NOT NULL DEFAULT 0", "last_error": "TEXT", "handoff_response": "TEXT",
     "sending_since": "TEXT", "ai_plan_json": "TEXT",
+    "notion_sync": "TEXT", "notion_syncing_since": "TEXT",
 }
 STALE_SENDING_SECONDS = 120  # a 'sending' claim older than this (e.g. server crashed mid-send) may be retried
 
@@ -128,7 +129,8 @@ def run_obj(row: sqlite3.Row) -> dict[str, Any]:
             "handoff_attempts": row["handoff_attempts"] if "handoff_attempts" in keys else 0,
             "last_error": row["last_error"] if "last_error" in keys else None,
             "event_id": event_id_for(row["id"], row["intake_key"], row["created_at"]),
-            "handoff_response": json.loads(row["handoff_response"]) if "handoff_response" in keys and row["handoff_response"] else None}
+            "handoff_response": json.loads(row["handoff_response"]) if "handoff_response" in keys and row["handoff_response"] else None,
+            "notion_sync": json.loads(row["notion_sync"]) if "notion_sync" in keys and row["notion_sync"] else None}
 
 
 def get_run(run_id: int) -> dict[str, Any]:
@@ -161,7 +163,13 @@ def config():
     provider, model = provider_settings()
     return {"provider": provider, "model": model,
             "handoff_enabled": bool(os.getenv("N8N_WEBHOOK_URL")),
+            "notion_sync_enabled": notion_sync_enabled(),
             "access_code_required": bool(os.getenv("DEMO_ACCESS_CODE"))}
+
+
+def notion_sync_enabled() -> bool:
+    """External writes are off by default: the owner must opt in here AND enable sync in n8n."""
+    return os.getenv("NOTION_SYNC_ENABLED", "").lower() in ("1", "true", "yes") and bool(_sibling_url("agencyflow-notion-sync", "N8N_NOTION_SYNC_URL"))
 
 
 @app.get("/api/health")
@@ -371,13 +379,72 @@ def handoff(run_id: int, x_demo_code: str | None = Header(default=None)):
     return {"run": get_run(run_id), "reused": False, "ack": ack}
 
 
-def _tracker_url() -> str:
-    """Read-back webhook for tasks n8n stored. Defaults to the sibling path of the handoff webhook."""
-    explicit = os.getenv("N8N_TASKS_URL", "")
+def _sibling_url(path: str, env: str) -> str:
+    """Other AgencyFlow webhooks live next to the handoff webhook unless set explicitly."""
+    explicit = os.getenv(env, "")
     if explicit:
         return explicit
     hook = os.getenv("N8N_WEBHOOK_URL", "")
-    return hook.replace("/agencyflow-reviewed", "/agencyflow-tasks") if hook.endswith("/agencyflow-reviewed") else ""
+    return hook.replace("/agencyflow-reviewed", "/" + path) if hook.endswith("/agencyflow-reviewed") else ""
+
+
+def _tracker_url() -> str:
+    return _sibling_url("agencyflow-tasks", "N8N_TASKS_URL")
+
+
+@app.post("/api/runs/{run_id}/notion-sync")
+def notion_sync(run_id: int, x_demo_code: str | None = Header(default=None)):
+    """Push this plan's approved, n8n-stored tasks to the sandbox Notion data source (via n8n).
+
+    Safe to repeat: n8n finds pages by external_ref before creating, so a retry fixes only what
+    failed and never duplicates. Success is what n8n read back from Notion, not what it sent.
+    """
+    check_code(x_demo_code)
+    if not notion_sync_enabled():
+        raise HTTPException(409, "Notion sync is off. The owner enables it with NOTION_SYNC_ENABLED=1 after setting it up in n8n.")
+    url = _sibling_url("agencyflow-notion-sync", "N8N_NOTION_SYNC_URL")
+    _validated_webhook()
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" and parsed.hostname not in ("localhost", "127.0.0.1"):
+        raise HTTPException(500, "Notion sync webhook must use HTTPS, or HTTP on localhost")
+    run = get_run(run_id)
+    if run["status"] != "sent":
+        raise HTTPException(409, "Only plans that were approved and delivered to n8n can be synced to Notion.")
+    stale_before = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() - STALE_SENDING_SECONDS, timezone.utc).isoformat(timespec="seconds")
+    with connect() as db:
+        claimed = db.execute("""UPDATE runs SET notion_syncing_since=? WHERE id=? AND status='sent'
+                                AND (notion_syncing_since IS NULL OR notion_syncing_since < ?)""", (utcnow(), run_id, stale_before)).rowcount
+    if not claimed:
+        raise HTTPException(409, "A Notion sync for this plan is already running.")
+    request = URLRequest(url, data=json.dumps({"event_id": run["event_id"]}).encode(), headers={"Content-Type": "application/json"}, method="POST")
+    result: dict[str, Any]
+    try:
+        with urlopen(request, timeout=int(os.getenv("NOTION_SYNC_TIMEOUT", "180"))) as response:
+            result = json.loads(response.read(500_000) or b"{}")
+    except HTTPError as exc:
+        try:
+            body = json.loads(exc.read() or b"{}")
+        except ValueError:
+            body = {}
+        result = {"status": body.get("status") or "failed", "error": body.get("error") or f"n8n returned HTTP {exc.code}", "tasks": []}
+    except (URLError, TimeoutError, OSError, ValueError):
+        result = {"status": "failed", "error": "n8n could not be reached. Nothing was marked as synced; retry when it is back.", "tasks": []}
+    finally:
+        with connect() as db:
+            db.execute("UPDATE runs SET notion_syncing_since=NULL WHERE id=?", (run_id,))
+    keep = ("external_ref", "title", "action", "status", "url", "error")
+    tasks = [{k: t.get(k) for k in keep} for t in result.get("tasks", []) if isinstance(t, dict)]
+    summary = {"status": result.get("status", "failed"), "synced": result.get("synced", 0), "total": result.get("total", len(tasks)),
+               "error": result.get("error"), "tasks": tasks, "at": utcnow()}
+    with connect() as db:
+        db.execute("UPDATE runs SET notion_sync=? WHERE id=?", (json.dumps(summary)[:20000], run_id))
+        detail = f"{summary['synced']}/{summary['total']} tasks verified in Notion" + (f": {summary['error']}" if summary["error"] else "")
+        failed = [t for t in tasks if not str(t.get("status", "")).startswith("synced")]
+        if failed:
+            detail += "; failed: " + "; ".join(f"{t['title']}: {t['error']}" for t in failed[:3])
+        log_event(db, f"notion_sync_{summary['status']}" if summary["status"] in ("complete", "partial", "failed") else "notion_sync_refused",
+                  detail, run_id)
+    return {"run": get_run(run_id), "sync": summary}
 
 
 @app.get("/api/tracker")
@@ -393,7 +460,8 @@ def tracker(event_id: str | None = None, x_demo_code: str | None = Header(defaul
             tasks = json.loads(response.read(500_000) or b"{}").get("tasks", [])
     except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
         raise HTTPException(502, "Could not read tasks back from n8n.") from exc
-    keep = ("external_ref", "event_id", "campaign", "title", "assignee_role", "priority", "due_date", "status", "received_at")
+    keep = ("external_ref", "event_id", "campaign", "title", "assignee_role", "priority", "due_date", "status", "received_at",
+            "notion_status", "notion_url")
     rows = [{k: t.get(k) for k in keep} for t in tasks if isinstance(t, dict) and (not event_id or t.get("event_id") == event_id)]
     return {"tasks": rows}
 

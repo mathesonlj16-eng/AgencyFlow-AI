@@ -39,6 +39,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(app, "DB", tmp_path / "agencyflow.sqlite3")
     monkeypatch.delenv("DEMO_ACCESS_CODE", raising=False)
     monkeypatch.delenv("N8N_WEBHOOK_URL", raising=False)
+    for var in ("NOTION_SYNC_ENABLED", "N8N_NOTION_SYNC_URL", "N8N_TASKS_URL"):
+        monkeypatch.delenv(var, raising=False)
     return TestClient(app.app)
 
 
@@ -385,6 +387,86 @@ def test_tracker_unconfigured_or_unreachable(client, monkeypatch):
     monkeypatch.setenv("N8N_WEBHOOK_URL", HOOK)
     with patch.object(app, "urlopen", side_effect=URLError("down")):
         assert client.get("/api/tracker").status_code == 502
+
+
+# ---------- Notion sync (issue #1) ----------
+
+def sent_run(client, monkeypatch):
+    rid = make_run(client)["id"]
+    client.post(f"/api/runs/{rid}/approve")
+    monkeypatch.setenv("N8N_WEBHOOK_URL", HOOK)
+    with patch.object(app, "urlopen", return_value=ok_response({"status": "accepted"})):
+        assert client.post(f"/api/runs/{rid}/handoff").json()["run"]["status"] == "sent"
+    return rid
+
+
+def test_notion_sync_is_off_by_default_and_sends_nothing(client, monkeypatch):
+    rid = sent_run(client, monkeypatch)
+    assert client.get("/api/config").json()["notion_sync_enabled"] is False
+    with patch.object(app, "urlopen", side_effect=AssertionError("no request allowed")):
+        r = client.post(f"/api/runs/{rid}/notion-sync")
+    assert r.status_code == 409 and "off" in r.json()["detail"]
+
+
+def test_notion_sync_requires_approved_and_delivered_plan(client, monkeypatch):
+    monkeypatch.setenv("NOTION_SYNC_ENABLED", "1"); monkeypatch.setenv("N8N_WEBHOOK_URL", HOOK)
+    rid = make_run(client)["id"]
+    with patch.object(app, "urlopen", side_effect=AssertionError("no request allowed")):
+        assert client.post(f"/api/runs/{rid}/notion-sync").status_code == 409          # still in review
+        client.post(f"/api/runs/{rid}/approve")
+        assert client.post(f"/api/runs/{rid}/notion-sync").status_code == 409          # approved, not yet in n8n
+
+
+def test_notion_sync_complete_sends_only_event_id_and_records_result(client, monkeypatch):
+    rid = sent_run(client, monkeypatch)
+    monkeypatch.setenv("NOTION_SYNC_ENABLED", "1")
+    done = {"status": "complete", "synced": 3, "total": 3, "tasks": [
+        {"external_ref": f"af-1-x#{i}", "title": f"T{i}", "action": "create", "status": "synced", "url": f"https://notion.so/p{i}", "error": "", "extra": "dropped"} for i in (1, 2, 3)]}
+    with patch.object(app, "urlopen", return_value=ok_response(done)) as post:
+        r = client.post(f"/api/runs/{rid}/notion-sync")
+    req = post.call_args.args[0]
+    assert req.full_url == "https://example.test/webhook/agencyflow-notion-sync"
+    assert json.loads(req.data) == {"event_id": client.get(f"/api/runs/{rid}").json()["run"]["event_id"]}  # n8n uses its own stored rows
+    sync = r.json()["run"]["notion_sync"]
+    assert sync["status"] == "complete" and sync["synced"] == 3 and "extra" not in sync["tasks"][0]
+    assert events(client, rid)[-1] == "notion_sync_complete"
+
+
+def test_notion_sync_partial_failure_is_reported_and_retry_is_allowed(client, monkeypatch):
+    rid = sent_run(client, monkeypatch)
+    monkeypatch.setenv("NOTION_SYNC_ENABLED", "1")
+    partial = {"status": "partial", "synced": 1, "total": 2, "tasks": [
+        {"external_ref": "a#1", "title": "Shoot", "status": "synced", "url": "u1", "error": ""},
+        {"external_ref": "a#2", "title": "Edit", "status": "failed", "url": "", "error": "Notion rate limit reached after retries."}]}
+    with patch.object(app, "urlopen", return_value=ok_response(partial)):
+        r = client.post(f"/api/runs/{rid}/notion-sync").json()
+    assert r["sync"]["status"] == "partial"
+    detail = client.get(f"/api/runs/{rid}/events").json()["events"][-1]["detail"]
+    assert "1/2" in detail and "Edit: Notion rate limit" in detail
+    with patch.object(app, "urlopen", return_value=ok_response({**partial, "status": "complete", "synced": 2})):
+        assert client.post(f"/api/runs/{rid}/notion-sync").json()["sync"]["status"] == "complete"   # lock released, retry works
+
+
+def test_notion_sync_surfaces_n8n_refusal_and_outage(client, monkeypatch):
+    rid = sent_run(client, monkeypatch)
+    monkeypatch.setenv("NOTION_SYNC_ENABLED", "1")
+    err = HTTPError(HOOK, 409, "Conflict", {}, io.BytesIO(b'{"status": "disabled", "error": "Notion sync is configured but disabled."}'))
+    with patch.object(app, "urlopen", side_effect=err):
+        s = client.post(f"/api/runs/{rid}/notion-sync").json()["sync"]
+    assert s["status"] == "disabled" and "disabled" in s["error"]
+    with patch.object(app, "urlopen", side_effect=URLError("down")):
+        s = client.post(f"/api/runs/{rid}/notion-sync").json()["sync"]
+    assert s["status"] == "failed" and "could not be reached" in s["error"]
+    assert events(client, rid)[-2:] == ["notion_sync_refused", "notion_sync_failed"]
+
+
+def test_notion_sync_blocks_concurrent_runs(client, monkeypatch):
+    rid = sent_run(client, monkeypatch)
+    monkeypatch.setenv("NOTION_SYNC_ENABLED", "1")
+    with app.connect() as db:
+        db.execute("UPDATE runs SET notion_syncing_since=? WHERE id=?", (app.utcnow(), rid))
+    with patch.object(app, "urlopen", side_effect=AssertionError("must not call twice")):
+        assert client.post(f"/api/runs/{rid}/notion-sync").status_code == 409
 
 
 def test_public_backend_requires_access_code_when_configured(client, monkeypatch):
