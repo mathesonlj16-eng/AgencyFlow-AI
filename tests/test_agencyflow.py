@@ -146,6 +146,16 @@ def test_runs_persist_metadata_and_survive_reconnect(client):
     assert stored["event_id"].startswith(f"af-{run['id']}-")
 
 
+def test_event_id_differs_after_database_reset(tmp_path, monkeypatch, client):
+    first = make_run(client)
+    monkeypatch.setattr(app, "DB", tmp_path / "fresh.sqlite3")  # same brief, new database, same run id 1
+    import time; time.sleep(1.1)  # created_at has second resolution
+    second = make_run(client)
+    assert first["id"] == second["id"] == 1
+    assert first["event_id"] != second["event_id"]
+    assert second["event_id"].startswith("af-1-")
+
+
 def test_legacy_v01_database_is_migrated(tmp_path, monkeypatch):
     import sqlite3
     db_path = tmp_path / "old.sqlite3"

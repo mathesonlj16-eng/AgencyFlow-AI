@@ -6,7 +6,9 @@ AgencyFlow AI is a small, local-first operations tool for creative and social-me
 
 > Independent portfolio project using **fictional** restaurant briefs. It is not a client engagement and not an official product of any agency.
 
-![Approved plan delivered to n8n](docs/screenshots/04-approved-sent-to-n8n.png)
+**[▶ Watch the 2-minute demo (MP4)](docs/demo/agencyflow-demo.mp4)**: a real run on a laptop. The model's ~70 s of thinking and an n8n restart are sped up, and the captions say so.
+
+[![Demo video: approved plan delivered to n8n](docs/demo/poster.jpg)](docs/demo/agencyflow-demo.mp4)
 
 ## Two-minute demo
 
@@ -94,7 +96,7 @@ The script imports [n8n/agencyflow-reviewed-webhook.json](n8n/agencyflow-reviewe
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-23 backend tests cover: model contract and bad dates, server-side due-date scheduling, the repair retry and the hard failure after it, duplicate detection (including case and whitespace variants), model failure logging and recovery, persistence and legacy database migration, edit/approve/export gating, adding and removing tasks, readable validation errors, approval-gated handoff, replay suppression, failed-handoff recovery and retry, receiver rejection messages, the concurrent-send lock, stale-claim recovery, access codes and webhook URL restrictions. **These tests mock the model and the webhook.**
+24 backend tests cover: model contract and bad dates, server-side due-date scheduling, the repair retry and the hard failure after it, duplicate detection (including case and whitespace variants), model failure logging and recovery, persistence and legacy database migration, event ids that stay unique after a database reset, edit/approve/export gating, adding and removing tasks, readable validation errors, approval-gated handoff, replay suppression, failed-handoff recovery and retry, receiver rejection messages, the concurrent-send lock, stale-claim recovery, access codes and webhook URL restrictions. **These tests mock the model and the webhook.**
 
 Live verification was done separately (below).
 
@@ -135,7 +137,6 @@ Full outputs: [examples/live-output](examples/live-output). The end-to-end chain
 ## Limitations and safety
 
 - The app binds to `127.0.0.1`. Do not expose it publicly without `DEMO_ACCESS_CODE`, rate limiting and HTTPS.
-- Event ids are unique per database. If you delete the database but keep the same n8n, a new run can reuse an old id; n8n then reports a duplicate or conflict.
 - n8n's static-data replay guard is not atomic under truly simultaneous identical requests; the app-side `sending` lock prevents that path in normal use. A production receiver should use a database unique constraint.
 - Briefs are treated as untrusted data in the prompt, but prompt injection cannot be ruled out for any LLM. Human approval is the control.
 

@@ -101,9 +101,15 @@ def check_code(code: str | None):
         raise HTTPException(status_code=401, detail="Enter the demo access code to use this workspace.")
 
 
+def event_id_for(run_id: int, intake_key: str, created_at: str) -> str:
+    """Stable per run, and unique across databases: created_at is mixed in so a reset
+    database cannot reuse an id the n8n receiver has already seen."""
+    digest = hashlib.sha256(f"{intake_key}|{created_at}".encode()).hexdigest()[:12]
+    return f"af-{run_id}-{digest}"
+
+
 def event_id(run: dict[str, Any]) -> str:
-    """Stable per run: the same approved plan always carries the same event id."""
-    return f"af-{run['id']}-{run['intake_key'][:12]}"
+    return event_id_for(run["id"], run["intake_key"], run["created_at"])
 
 
 def run_obj(row: sqlite3.Row) -> dict[str, Any]:
@@ -117,7 +123,7 @@ def run_obj(row: sqlite3.Row) -> dict[str, Any]:
             "latency_ms": row["latency_ms"] if "latency_ms" in keys else None,
             "handoff_attempts": row["handoff_attempts"] if "handoff_attempts" in keys else 0,
             "last_error": row["last_error"] if "last_error" in keys else None,
-            "event_id": f"af-{row['id']}-{row['intake_key'][:12]}",
+            "event_id": event_id_for(row["id"], row["intake_key"], row["created_at"]),
             "handoff_response": json.loads(row["handoff_response"]) if "handoff_response" in keys and row["handoff_response"] else None}
 
 
