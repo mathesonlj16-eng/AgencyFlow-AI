@@ -13,6 +13,7 @@ const samples = {
 const EVENT_LABELS = {
   generated: 'AI draft generated', generation_failed: 'AI generation failed', model_output_repaired: 'Invalid model output repaired',
   rule_fix: 'Corrected by a rule (not the AI)',
+  campaign_context_updated: 'Campaign discovery saved',
   duplicate_reused: 'Duplicate brief: saved plan reused', edited: 'Draft edited', approved: 'Approved by reviewer',
   handoff_sent: 'Delivered to n8n', handoff_failed: 'n8n handoff failed', handoff_replay_blocked: 'Resend blocked (already delivered)',
 };
