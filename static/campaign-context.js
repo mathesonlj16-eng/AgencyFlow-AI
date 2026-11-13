@@ -25,7 +25,7 @@
   }
 
   function markup(data, editable, questions) {
-    const inputs = fields.map(([key, title, hint], i) => {
+    const inputs = fields.map(([key, title, hint]) => {
       const f = data[key] || {status: 'unknown', value: null, provenance: null};
       const row = `<div class="context-field" data-context-row="${key}">
         <label for="context-value-${key}">${escape(title)}</label>
@@ -45,11 +45,11 @@
           aria-label="${escape(title)} source"
           ${editable && f.status === 'client_confirmed' ? '' : 'disabled'}>
       </div>`;
-      return i === 4 ? `<div class="context-optional-start">${row}` : row;
+      return row;
     });
     // Keep the first four strategic questions prominent.
     const compact = inputs.slice(0, 4).join('');
-    const extras = inputs.slice(4).map((s, i) => i === 0 ? s.slice('<div class="context-optional-start">'.length) : s).join('');
+    const extras = inputs.slice(4).join('');
     const missing = questions.length
       ? `<div class="context-questions"><strong>Questions still needing confirmation</strong><ul>
         ${questions.map(q => `<li>${escape(q)}</li>`).join('')}</ul>
@@ -121,13 +121,18 @@
       if (run.status !== 'review') return;
 
       const capture = () => {
-        try {
-          const snapshot = collect(form);
-          drafts.set(run.id, {data: snapshot, dirty: true});
-        } catch (_) {
-          // Keep input elements intact; savePending will provide a useful error.
-          drafts.set(run.id, {dirty: true, data: null});
+        // Preserve even incomplete edits if another plan widget re-renders.
+        // Validation happens on save, not while a person is still typing.
+        const snapshot = {};
+        for (const [key] of fields) {
+          const status = form.querySelector(`[data-context-status="${key}"]`).value;
+          snapshot[key] = status === 'unknown'
+            ? {status, value: null, provenance: null}
+            : {status,
+               value: form.querySelector(`[data-context-value="${key}"]`).value,
+               provenance: form.querySelector(`[data-context-provenance="${key}"]`).value};
         }
+        drafts.set(run.id, {data: snapshot, dirty: true});
       };
       form.addEventListener('input', capture);
       form.addEventListener('change', (e) => {
