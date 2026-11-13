@@ -298,6 +298,24 @@ def test_stale_sending_claim_can_be_recovered(client, monkeypatch):
     assert r.status_code == 200 and r.json()["run"]["status"] == "sent"
 
 
+def test_tracker_reads_back_only_this_plans_tasks(client, monkeypatch):
+    monkeypatch.setenv("N8N_WEBHOOK_URL", HOOK)
+    stored = {"tasks": [{"external_ref": "af-1-aaa#1", "event_id": "af-1-aaa", "title": "Mine", "secret_extra": "x"},
+                        {"external_ref": "af-2-bbb#1", "event_id": "af-2-bbb", "title": "Other"}]}
+    with patch.object(app, "urlopen", return_value=ok_response(stored)) as get:
+        r = client.get("/api/tracker", params={"event_id": "af-1-aaa"})
+    assert get.call_args.args[0].full_url == "https://example.test/webhook/agencyflow-tasks"
+    assert r.status_code == 200 and [t["title"] for t in r.json()["tasks"]] == ["Mine"]
+    assert "secret_extra" not in r.json()["tasks"][0]
+
+
+def test_tracker_unconfigured_or_unreachable(client, monkeypatch):
+    assert client.get("/api/tracker").status_code == 409
+    monkeypatch.setenv("N8N_WEBHOOK_URL", HOOK)
+    with patch.object(app, "urlopen", side_effect=URLError("down")):
+        assert client.get("/api/tracker").status_code == 502
+
+
 def test_public_backend_requires_access_code_when_configured(client, monkeypatch):
     monkeypatch.setenv("DEMO_ACCESS_CODE", "correct-example-code")
     assert client.get("/api/runs").status_code == 401

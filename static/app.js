@@ -102,8 +102,10 @@ function renderReadOnly(p) {
 function renderHandoff(run) {
   if (run.status === 'sent' && run.handoff_response) {
     const a = run.handoff_response;
+    const stored = a.tasks_stored != null ? `${escapeHtml(a.tasks_stored)} tasks stored in n8n` : `${escapeHtml(a.cards_prepared ?? '?')} tracker cards prepared`;
     return `<div class="handoff-card ok"><strong>✓ n8n acknowledged ${escapeHtml(a.event_id || run.event_id)}</strong>
-      <span>${escapeHtml(a.cards_prepared ?? '?')} tracker cards prepared · external actions: ${escapeHtml(a.external_actions || 'n/a')}</span></div>`;
+      <span>${stored} · external actions: ${escapeHtml(a.external_actions || 'n/a')}</span>
+      <div id="trackerRows" class="tracker-rows"><span class="hint">Reading tasks back from n8n…</span></div></div>`;
   }
   if (run.last_error && run.status === 'approved') {
     return `<div class="handoff-card fail"><strong>Last handoff failed</strong><span>${escapeHtml(run.last_error)} The plan is still approved and nothing was marked as sent. Retry when n8n is back.</span></div>`;
@@ -137,6 +139,19 @@ function render() {
   area.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => mutateList(b.dataset.remove, Number(b.dataset.i))));
   area.querySelectorAll('input,textarea,select').forEach(f => f.addEventListener('input', () => { dirty = true; }));
   loadActivity();
+  if (el('trackerRows')) loadTracker(current.event_id);
+}
+
+async function loadTracker(eventId) {
+  const box = el('trackerRows');
+  try {
+    const {tasks} = await api(`/api/tracker?event_id=${encodeURIComponent(eventId)}`);
+    if (!el('trackerRows') || current?.event_id !== eventId) return;
+    box.innerHTML = tasks.length
+      ? `<div class="tracker-title">Stored in n8n data table (read back live)</div><table class="tracker"><thead><tr><th>Task</th><th>Role</th><th>Due</th><th>Status</th></tr></thead><tbody>${
+          tasks.map(t => `<tr><td>${escapeHtml(t.title)}</td><td>${escapeHtml(t.assignee_role)}</td><td>${escapeHtml(t.due_date || '—')}</td><td>${escapeHtml(t.status)}</td></tr>`).join('')}</tbody></table>`
+      : '<span class="hint">n8n has no stored tasks for this plan.</span>';
+  } catch (e) { if (el('trackerRows')) box.innerHTML = `<span class="hint">${escapeHtml(e.message)}</span>`; }
 }
 
 function formPlan() {

@@ -337,6 +337,33 @@ def handoff(run_id: int, x_demo_code: str | None = Header(default=None)):
     return {"run": get_run(run_id), "reused": False, "ack": ack}
 
 
+def _tracker_url() -> str:
+    """Read-back webhook for tasks n8n stored. Defaults to the sibling path of the handoff webhook."""
+    explicit = os.getenv("N8N_TASKS_URL", "")
+    if explicit:
+        return explicit
+    hook = os.getenv("N8N_WEBHOOK_URL", "")
+    return hook.replace("/agencyflow-reviewed", "/agencyflow-tasks") if hook.endswith("/agencyflow-reviewed") else ""
+
+
+@app.get("/api/tracker")
+def tracker(event_id: str | None = None, x_demo_code: str | None = Header(default=None)):
+    """Tasks as stored in n8n (read-only). Proves the handoff landed somewhere, not just that n8n said 200."""
+    check_code(x_demo_code)
+    url = _tracker_url()
+    if not url:
+        raise HTTPException(409, "No n8n task read-back URL configured")
+    _validated_webhook()  # same HTTPS / localhost rule
+    try:
+        with urlopen(URLRequest(url, method="GET"), timeout=10) as response:
+            tasks = json.loads(response.read(500_000) or b"{}").get("tasks", [])
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
+        raise HTTPException(502, "Could not read tasks back from n8n.") from exc
+    keep = ("external_ref", "event_id", "campaign", "title", "assignee_role", "priority", "due_date", "status", "received_at")
+    rows = [{k: t.get(k) for k in keep} for t in tasks if isinstance(t, dict) and (not event_id or t.get("event_id") == event_id)]
+    return {"tasks": rows}
+
+
 app.mount("/assets", StaticFiles(directory=BASE / "static"), name="assets")
 
 
