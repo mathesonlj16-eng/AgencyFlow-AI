@@ -1,0 +1,166 @@
+{
+  "note": "Captured from a live local run (Ollama qwen3.5:4b, earlier prompt revision before the one-entry-per-asset-type rule). Approved and sent to the demo n8n receiver.",
+  "status": "sent",
+  "model": "qwen3.5:4b",
+  "attempts": 1,
+  "latency_ms": 69399,
+  "client_name": "Copper Kettle Bistro (fictional)",
+  "brief": "Hi team! Copper Kettle Bistro is reopening our heated patio on 2026-12-04 and we want people to know. Can you make four Instagram posts, one 30-second reel of the patio at night, and a short Google Business Profile update? We have our logo and last year's patio photos but they're from summer so probably not great. Owner wants to approve everything before it goes out. Also not sure what our budget is yet, still waiting on that.",
+  "plan": {
+    "campaign_name": "Copper Kettle Patio Reopening",
+    "summary": "Produce four Instagram posts and one reel for the Copper Kettle Bistro patio reopening on December 4, 2026, using existing assets with new winter photography. All content requires owner approval before publication.",
+    "deadline_mention": "reopening our heated patio on 2026-12-04",
+    "deadline": "2026-12-04",
+    "deliverables": [
+      {
+        "name": "Instagram Post 1",
+        "channel": "Instagram",
+        "quantity": 1,
+        "notes": "Patio night shot"
+      },
+      {
+        "name": "Instagram Post 2",
+        "channel": "Instagram",
+        "quantity": 1,
+        "notes": "Patio night shot"
+      },
+      {
+        "name": "Instagram Post 3",
+        "channel": "Instagram",
+        "quantity": 1,
+        "notes": "Patio night shot"
+      },
+      {
+        "name": "Instagram Post 4",
+        "channel": "Instagram",
+        "quantity": 1,
+        "notes": "Patio night shot"
+      },
+      {
+        "name": "Reel",
+        "channel": "Instagram",
+        "quantity": 1,
+        "notes": "30-second patio night video"
+      }
+    ],
+    "tasks": [
+      {
+        "title": "Request budget confirmation from owner",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Confirm total budget and approval authority before proceeding.",
+        "days_before_deadline": 15,
+        "due_date": "2026-11-19"
+      },
+      {
+        "title": "Photograph patio at night",
+        "role": "photographer",
+        "priority": "high",
+        "detail": "Capture new winter lighting for all four posts and reel.",
+        "days_before_deadline": 10,
+        "due_date": "2026-11-24"
+      },
+      {
+        "title": "Edit photos and create reel",
+        "role": "designer",
+        "priority": "medium",
+        "detail": "Process images and assemble video with captions.",
+        "days_before_deadline": 5,
+        "due_date": "2026-11-29"
+      },
+      {
+        "title": "Submit content for owner review",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Send all four posts and reel to owner for final approval.",
+        "days_before_deadline": 4,
+        "due_date": "2026-11-30"
+      },
+      {
+        "title": "Publish Instagram posts and Reel",
+        "role": "social media manager",
+        "priority": "medium",
+        "detail": "Schedule and publish content on December 3, 2026.",
+        "days_before_deadline": 1,
+        "due_date": "2026-12-03"
+      },
+      {
+        "title": "Update Google Business Profile",
+        "role": "producer",
+        "priority": "low",
+        "detail": "Post announcement to GBP once Instagram is live.",
+        "days_before_deadline": 0,
+        "due_date": "2026-12-04"
+      }
+    ],
+    "missing_inputs": [
+      "What is the confirmed budget for this campaign?",
+      "Who has final sign-off authority on the content?",
+      "Are there any specific messaging guidelines or hashtags required?"
+    ],
+    "risks": [
+      "Budget delay may impact resource allocation.",
+      "Summer photos are unsuitable for winter reopening context.",
+      "Owner approval timeline could extend beyond planned schedule."
+    ]
+  },
+  "n8n_ack": {
+    "status": "accepted",
+    "duplicate": false,
+    "event_id": "af-1-0a5c630fa376",
+    "campaign": "Copper Kettle Patio Reopening",
+    "cards_prepared": 6,
+    "open_questions": 3,
+    "external_actions": "disabled (dry run)",
+    "cards": [
+      {
+        "external_ref": "af-1-0a5c630fa376#1",
+        "title": "Request budget confirmation from owner",
+        "assignee_role": "producer",
+        "priority": "high",
+        "due_date": "2026-11-19",
+        "description": "Confirm total budget and approval authority before proceeding."
+      },
+      {
+        "external_ref": "af-1-0a5c630fa376#2",
+        "title": "Photograph patio at night",
+        "assignee_role": "photographer",
+        "priority": "high",
+        "due_date": "2026-11-24",
+        "description": "Capture new winter lighting for all four posts and reel."
+      },
+      {
+        "external_ref": "af-1-0a5c630fa376#3",
+        "title": "Edit photos and create reel",
+        "assignee_role": "designer",
+        "priority": "medium",
+        "due_date": "2026-11-29",
+        "description": "Process images and assemble video with captions."
+      },
+      {
+        "external_ref": "af-1-0a5c630fa376#4",
+        "title": "Submit content for owner review",
+        "assignee_role": "producer",
+        "priority": "high",
+        "due_date": "2026-11-30",
+        "description": "Send all four posts and reel to owner for final approval."
+      },
+      {
+        "external_ref": "af-1-0a5c630fa376#5",
+        "title": "Publish Instagram posts and Reel",
+        "assignee_role": "social media manager",
+        "priority": "medium",
+        "due_date": "2026-12-03",
+        "description": "Schedule and publish content on December 3, 2026."
+      },
+      {
+        "external_ref": "af-1-0a5c630fa376#6",
+        "title": "Update Google Business Profile",
+        "assignee_role": "producer",
+        "priority": "low",
+        "due_date": "2026-12-04",
+        "description": "Post announcement to GBP once Instagram is live."
+      }
+    ]
+  }
+}

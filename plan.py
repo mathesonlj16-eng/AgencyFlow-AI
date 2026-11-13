@@ -76,6 +76,8 @@ def schedule_tasks(plan: Plan) -> Plan:
     maths, so the model only proposes an offset and a human confirms the deadline.
     """
     deadline = date.fromisoformat(plan.deadline) if plan.deadline else None
+    # Earliest work first; stable, so equal offsets keep the reviewer's order.
+    plan.tasks.sort(key=lambda t: -t.days_before_deadline)
     for task in plan.tasks:
         task.due_date = (deadline - timedelta(days=task.days_before_deadline)).isoformat() if deadline else None
     return plan
@@ -108,6 +110,7 @@ Respond with exactly one valid JSON object, with NO markdown or commentary, cont
   "risks": ["operational or scheduling concern"]
 }
 Rules:
+- One deliverable entry per asset TYPE: "four Instagram posts" is ONE entry with quantity 4, not four entries. Include every asset type the brief asks for.
 - Quantities must match the brief exactly. Do not invent supplied assets, people, budgets or commitments.
 - Relative timing ("next Friday", "next month") is NOT a date: copy it to deadline_mention, set deadline to null, and ask the client to confirm the exact date in missing_inputs.
 - days_before_deadline: days before the deadline each task should be finished (0 = launch day). Order work realistically: inputs and shoots first, then editing/design, then client review, then scheduling.

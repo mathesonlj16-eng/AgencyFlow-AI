@@ -9,5 +9,7 @@ if (-not (Test-Path $python)) {
 }
 & $python -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
-Write-Host 'Open http://127.0.0.1:8766 in your browser.'
+if (-not $env:OLLAMA_MODEL) { $env:OLLAMA_MODEL = 'qwen3.5:4b' }
+Write-Host "Model: $env:OLLAMA_MODEL. Open http://127.0.0.1:8766 in your browser."
 & $python -m uvicorn app:app --host 127.0.0.1 --port 8766
+

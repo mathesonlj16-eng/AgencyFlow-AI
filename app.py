@@ -231,9 +231,12 @@ def run_events(run_id: int, x_demo_code: str | None = Header(default=None)):
 def edit_plan(run_id: int, plan: Plan, x_demo_code: str | None = Header(default=None)):
     check_code(x_demo_code)
     plan = schedule_tasks(plan)
+    new_json = plan.model_dump_json()
     with connect() as db:
-        changed = db.execute("UPDATE runs SET plan_json=? WHERE id=? AND status='review'",
-                             (plan.model_dump_json(), run_id)).rowcount
+        row = db.execute("SELECT plan_json FROM runs WHERE id=? AND status='review'", (run_id,)).fetchone()
+        if row is not None and row["plan_json"] == new_json:
+            return {"run": get_run(run_id)}  # no-op save: nothing to record
+        changed = db.execute("UPDATE runs SET plan_json=? WHERE id=? AND status='review'", (new_json, run_id)).rowcount
         if changed:
             log_event(db, "edited", f"{len(plan.tasks)} tasks, deadline {plan.deadline or 'unconfirmed'}", run_id)
     if not changed:

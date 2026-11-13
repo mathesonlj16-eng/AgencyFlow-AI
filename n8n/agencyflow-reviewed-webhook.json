@@ -1,5 +1,6 @@
 {
-  "name": "AgencyFlow AI - Reviewed Plan Receiver (Safe Demo)",
+  "id": "AgFlowReceiverV2",
+  "name": "AgencyFlow AI - Approved Plan Receiver (dry run)",
   "nodes": [
     {
       "parameters": {
@@ -12,38 +13,107 @@
       "name": "Receive approved plan",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [0, 300],
       "webhookId": "d8f42360-f1c5-46e9-9f93-084a37d5329b"
     },
     {
       "parameters": {
-        "jsCode": "const event = $input.first().json.body ?? {};\nif (event.schema_version !== 'agencyflow.v1' || !event.event_id || !Array.isArray(event.plan?.tasks) || !event.reviewed_at) { throw new Error('Expected a human-approved AgencyFlow v1 plan'); }\n// Read-only demo receiver: no Slack, Notion, or external side effects.\nreturn [{json: {received: true, event_id: event.event_id, campaign: event.plan.campaign_name, task_count: event.plan.tasks.length, status: 'accepted_for_demo_only'}}];"
+        "jsCode": "// Validate the human-approved payload and block replays by event_id.\n// Seen event ids live in workflow static data, which n8n persists for production (active) executions.\nconst body = $input.first().json.body ?? {};\nconst errors = [];\nif (body.schema_version !== 'agencyflow.v1') errors.push('unsupported schema_version');\nif (typeof body.event_id !== 'string' || !/^af-\\d+-[0-9a-f]{12}$/.test(body.event_id)) errors.push('missing or malformed event_id');\nif (!body.reviewed_at) errors.push('plan was not human-approved (reviewed_at missing)');\nconst tasks = body.plan?.tasks;\nif (!Array.isArray(tasks) || tasks.length === 0) errors.push('plan has no tasks');\nif (errors.length) {\n  return [{ json: { outcome: 'rejected', http: 422, response: { status: 'rejected', error: errors.join('; ') } } }];\n}\n\n// Cheap content fingerprint (djb2) so a reused event_id with different content is caught.\nconst text = JSON.stringify(body.plan);\nlet h = 5381;\nfor (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;\nconst fingerprint = h.toString(16);\n\nconst store = $getWorkflowStaticData('global');\nstore.seen = store.seen ?? {};\nconst prev = store.seen[body.event_id];\nif (prev && prev.fingerprint === fingerprint) {\n  return [{ json: { outcome: 'duplicate', http: 200, response: { status: 'duplicate_ignored', duplicate: true, event_id: body.event_id, first_received_at: prev.at, external_actions: 'none' } } }];\n}\nif (prev) {\n  return [{ json: { outcome: 'conflict', http: 409, response: { status: 'conflict', error: 'event_id already used for a different plan', event_id: body.event_id } } }];\n}\nstore.seen[body.event_id] = { fingerprint, at: new Date().toISOString(), tasks: tasks.length };\nconst ids = Object.keys(store.seen);\nif (ids.length > 500) for (const id of ids.slice(0, ids.length - 500)) delete store.seen[id];\n\nreturn [{ json: { outcome: 'accepted', http: 200, event: body } }];"
       },
       "id": "11e8b829-70b2-4fa9-bfc6-06ad1f82a9c7",
-      "name": "Validate reviewed payload",
+      "name": "Validate + replay check",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "c5b0a3a2-1f1e-4b5f-9b55-6a1d3b3c7f01",
+              "leftValue": "={{ $json.outcome }}",
+              "rightValue": "accepted",
+              "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a7f3e8c1-2b44-4c1e-8f0e-1c2d3e4f5a60",
+      "name": "New approved plan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map the approved plan into generic tracker cards. Dry run: nothing leaves n8n.\nconst e = $input.first().json.event;\nconst cards = e.plan.tasks.map((t, i) => ({\n  external_ref: `${e.event_id}#${i + 1}`,\n  title: t.title,\n  assignee_role: t.role,\n  priority: t.priority,\n  due_date: t.due_date ?? null,\n  description: t.detail,\n}));\nreturn [{ json: { event_id: e.event_id, campaign: e.plan.campaign_name, deadline: e.plan.deadline ?? null, open_questions: e.plan.missing_inputs ?? [], cards } }];"
+      },
+      "id": "b2c4d6e8-3a5b-4c7d-9e1f-2a3b4c5d6e70",
+      "name": "Prepare tracker cards",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.invalid/replace-with-your-project-tool-api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.cards) }}",
+        "options": {}
+      },
+      "id": "c3d5e7f9-4b6c-4d8e-8f2a-3b4c5d6e7f80",
+      "name": "Create tasks in project tool (DISABLED until approved)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 200],
+      "disabled": true,
+      "notes": "External write. Kept disabled on purpose. Enable only after the owner approves the destination, credentials and receiver-side de-duplication."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
-        "options": {"responseCode": 200}
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', duplicate: false, event_id: $('Prepare tracker cards').first().json.event_id, campaign: $('Prepare tracker cards').first().json.campaign, cards_prepared: $('Prepare tracker cards').first().json.cards.length, open_questions: $('Prepare tracker cards').first().json.open_questions.length, external_actions: 'disabled (dry run)', cards: $('Prepare tracker cards').first().json.cards }) }}",
+        "options": { "responseCode": 200 }
       },
       "id": "4fe98cd6-a231-4d3d-a154-d065a841b3d8",
-      "name": "Acknowledge (no external actions)",
+      "name": "Acknowledge accepted",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [680, 300]
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": { "responseCode": "={{ $json.http }}" }
+      },
+      "id": "d4e6f8a0-5c7d-4e9f-9a3b-4c5d6e7f8091",
+      "name": "Respond duplicate / rejected",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, 420]
     }
   ],
   "connections": {
-    "Receive approved plan": {"main": [[{"node": "Validate reviewed payload", "type": "main", "index": 0}]]},
-    "Validate reviewed payload": {"main": [[{"node": "Acknowledge (no external actions)", "type": "main", "index": 0}]]}
+    "Receive approved plan": { "main": [[{ "node": "Validate + replay check", "type": "main", "index": 0 }]] },
+    "Validate + replay check": { "main": [[{ "node": "New approved plan?", "type": "main", "index": 0 }]] },
+    "New approved plan?": {
+      "main": [
+        [{ "node": "Prepare tracker cards", "type": "main", "index": 0 }],
+        [{ "node": "Respond duplicate / rejected", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare tracker cards": { "main": [[{ "node": "Create tasks in project tool (DISABLED until approved)", "type": "main", "index": 0 }]] },
+    "Create tasks in project tool (DISABLED until approved)": { "main": [[{ "node": "Acknowledge accepted", "type": "main", "index": 0 }]] }
   },
   "active": false,
-  "settings": {"executionOrder": "v1"},
+  "settings": { "executionOrder": "v1" },
   "pinData": {},
   "tags": []
 }

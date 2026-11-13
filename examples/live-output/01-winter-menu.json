@@ -1,0 +1,101 @@
+{
+  "note": "Unedited-or-reviewed output captured from a live local run (Ollama qwen3.5:4b). Status shows whether a human edited/approved it.",
+  "status": "sent",
+  "model": "qwen3.5:4b",
+  "attempts": 1,
+  "latency_ms": 65137,
+  "client_name": "Northstar Kitchen (fictional)",
+  "brief": "We need three Instagram reels for our winter menu launch next Friday. We have food photos, but no videos yet. Make it warm and modern without looking too Christmas-specific. Also create two story graphics and a caption for each reel. We want a draft for review before anything gets published.",
+  "plan": {
+    "campaign_name": "Northstar Kitchen Winter Menu Launch",
+    "summary": "Produce three Instagram reels, two story graphics, and captions for a winter menu launch due next Friday, requiring video shoots from existing photos and client approval before publishing.",
+    "deadline_mention": "next Friday",
+    "deadline": "2026-11-20",
+    "deliverables": [
+      {
+        "name": "Instagram Reels",
+        "channel": "Instagram",
+        "quantity": 3,
+        "notes": "Warm and modern aesthetic, non-Christmas specific"
+      },
+      {
+        "name": "Story Graphics",
+        "channel": "Instagram Stories",
+        "quantity": 2,
+        "notes": "Promotional for winter menu"
+      },
+      {
+        "name": "Captions",
+        "channel": "Instagram",
+        "quantity": 3,
+        "notes": "One per reel"
+      }
+    ],
+    "tasks": [
+      {
+        "title": "Book food videographer for half-day shoot",
+        "role": "producer",
+        "priority": "medium",
+        "detail": "",
+        "days_before_deadline": 6,
+        "due_date": "2026-11-14"
+      },
+      {
+        "title": "Confirm exact launch date (client said next Friday)",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Clarify 'next Friday' to get a specific YYYY-MM-DD date for scheduling.",
+        "days_before_deadline": 5,
+        "due_date": "2026-11-15"
+      },
+      {
+        "title": "Shoot video content using provided food photos",
+        "role": "videographer",
+        "priority": "high",
+        "detail": "Capture warm, modern footage of winter menu items; avoid holiday-specific props.",
+        "days_before_deadline": 4,
+        "due_date": "2026-11-16"
+      },
+      {
+        "title": "Edit reels and design story graphics",
+        "role": "designer",
+        "priority": "medium",
+        "detail": "Apply warm/modern filter to video; create two story assets.",
+        "days_before_deadline": 3,
+        "due_date": "2026-11-17"
+      },
+      {
+        "title": "Draft captions for all three reels",
+        "role": "copywriter",
+        "priority": "medium",
+        "detail": "Write engaging copy matching the warm/modern tone.",
+        "days_before_deadline": 3,
+        "due_date": "2026-11-17"
+      },
+      {
+        "title": "Submit reel drafts and story graphics for client review",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Ensure all visual assets and captions are approved before scheduling.",
+        "days_before_deadline": 2,
+        "due_date": "2026-11-18"
+      },
+      {
+        "title": "Schedule reels and stories for launch",
+        "role": "social_manager",
+        "priority": "medium",
+        "detail": "Publish content on the confirmed Friday date.",
+        "days_before_deadline": 0,
+        "due_date": "2026-11-20"
+      }
+    ],
+    "missing_inputs": [
+      "What is the exact calendar date for 'next Friday'?",
+      "Are there any specific menu items that must be featured in the videos?"
+    ],
+    "risks": [
+      "Video shoot may run late due to lighting conditions.",
+      "Client approval cycle could delay final scheduling."
+    ]
+  }
+}
