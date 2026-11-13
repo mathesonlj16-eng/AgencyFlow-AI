@@ -126,6 +126,8 @@ The evaluation scores live output against facts written by hand from each brief:
 
 **Model choice.** The 7B model fixed the TikTok count, but on the held-out bakery brief it left the stated date unset and quoted words that aren't in the brief ("before the holidays"). It also counted episodes wrong on the YouTube brief. It needs 4.7 GB instead of 3.3 GB and, on this laptop, isn't faster. On this small sample it isn't more accurate either, so the 4B stays the default. The sample is 7 briefs, 1 to 2 runs each, so treat the differences as indicative, not significant.
 
+**Why a small local model at all.** I built this for a laptop with a 4 GB GPU on purpose. It has no API cost, and no client brief leaves the machine. The hardware explains the speed (the model runs about half on CPU) and caps local models at around 7B, but it doesn't change any model's answers. Larger local models or cloud models would likely score higher. Switching is one setting (`OLLAMA_MODEL` or `AI_PROVIDER=openai`), and `evals/run_eval.py` would measure the difference.
+
 Still not caught: the 4B's TikTok miscount survives the prompt fix. The count check flags it in the UI ("The brief asks for 2 TikToks; the plan has 1"), which is the point of keeping a person in the loop.
 
 ![Count check warning](docs/screenshots/10-count-check-warning.png)
