@@ -1,0 +1,49 @@
+{
+  "name": "AgencyFlow AI - Reviewed Plan Receiver (Safe Demo)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agencyflow-reviewed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5e4ab1d1-47bd-42d3-9d29-3284a1b5f90d",
+      "name": "Receive approved plan",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "d8f42360-f1c5-46e9-9f93-084a37d5329b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json.body ?? {};\nif (event.schema_version !== 'agencyflow.v1' || !event.event_id || !Array.isArray(event.plan?.tasks) || !event.reviewed_at) { throw new Error('Expected a human-approved AgencyFlow v1 plan'); }\n// Read-only demo receiver: no Slack, Notion, or external side effects.\nreturn [{json: {received: true, event_id: event.event_id, campaign: event.plan.campaign_name, task_count: event.plan.tasks.length, status: 'accepted_for_demo_only'}}];"
+      },
+      "id": "11e8b829-70b2-4fa9-bfc6-06ad1f82a9c7",
+      "name": "Validate reviewed payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {"responseCode": 200}
+      },
+      "id": "4fe98cd6-a231-4d3d-a154-d065a841b3d8",
+      "name": "Acknowledge (no external actions)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Receive approved plan": {"main": [[{"node": "Validate reviewed payload", "type": "main", "index": 0}]]},
+    "Validate reviewed payload": {"main": [[{"node": "Acknowledge (no external actions)", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "pinData": {},
+  "tags": []
+}

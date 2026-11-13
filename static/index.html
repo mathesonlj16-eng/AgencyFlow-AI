@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e1523">
+  <meta name="description" content="AgencyFlow AI turns creative briefs into structured plans for human review and approval.">
+  <title>AgencyFlow AI — From brief to build</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">a<span>·</span></div><div><strong>agencyflow<span class="brand-ai">.ai</span></strong><small>CREATIVE OPERATIONS</small></div></div>
+      <nav aria-label="Main navigation">
+        <a class="nav-link active" href="#workspace"><span class="nav-icon">◫</span> Workspace <span class="nav-key">01</span></a>
+        <a class="nav-link" href="#how"><span class="nav-icon">⌘</span> How it works <span class="nav-key">02</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-divider"></div>
+        <div class="tiny-heading">BUILT FOR THE REAL WORLD</div>
+        <div class="sidebar-note">Good workflows don't just generate ideas. They make the next step clear.</div>
+        <div class="footer-bits"><span class="dot green"></span> Human approval required</div>
+        <div class="version">INDEPENDENT PORTFOLIO DEMO · V0.1</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Workspace <span class="chev">/</span> <strong>Campaign intake</strong></div>
+        <div class="status-inline"><span class="dot" id="providerDot"></span><span id="providerLabel">Checking model...</span></div>
+      </header>
+      <div class="content" id="workspace">
+        <div class="hero"><div class="eyebrow"><span class="eyebrow-line"></span> YOUR CREATIVE OPERATIONS COPILOT</div>
+          <h1>From messy brief<br>to <em>clear next steps.</em></h1>
+          <p>Turn an unstructured client request into an organized production plan. Real AI extraction, practical tasks, and one essential checkpoint: your approval.</p>
+        </div>
+        <div class="work-grid">
+          <section class="panel intake-panel" aria-labelledby="briefTitle">
+            <div class="panel-top"><div><span class="step-tag">01 / INPUT</span><h2 id="briefTitle">New client brief</h2><p>Paste the request exactly as it arrived.</p></div><div class="panel-icon">↗</div></div>
+            <div class="field"><label for="client">CLIENT / PROJECT</label><input id="client" maxlength="100" placeholder="e.g. Northstar Kitchen" autocomplete="off"></div>
+            <div class="field"><div class="label-row"><label for="brief">CAMPAIGN REQUEST</label><span class="char-count" id="charCount">0 / 6,000</span></div><textarea id="brief" maxlength="6000" placeholder="Paste a client message, email summary, or campaign brief here…"></textarea></div>
+            <div class="sample-row"><span>TRY A SAMPLE</span><button class="chip" data-sample="restaurant" type="button">Winter menu ↗</button><button class="chip" data-sample="hotel" type="button">Hotel launch ↗</button></div>
+            <div class="form-bottom"><div class="privacy"><span>◇</span> Fictional demo data only</div><button id="analyzeBtn" class="button button-primary" type="button"><span id="analyzeText">Generate production plan</span><span aria-hidden="true">→</span></button></div>
+          </section>
+          <section class="panel result-panel" aria-labelledby="planTitle">
+            <div class="panel-top result-heading"><div><span class="step-tag">02 / REVIEW</span><h2 id="planTitle">Production plan</h2><p>Nothing gets published automatically.</p></div><span id="runBadge" class="pill">Awaiting brief</span></div>
+            <div id="emptyState" class="empty-state"><div class="abstract-card"><span class="ac-header"></span><span class="ac-line one"></span><span class="ac-line two"></span><span class="ac-row"><i></i><i></i><i></i></span><span class="ac-check">✓</span></div><h3>Less chaos. More creating.</h3><p>Your AI-generated plan will appear here, ready for your review.</p></div>
+            <div id="planArea" class="plan-area" hidden></div>
+          </section>
+        </div>
+        <section id="how" class="how-section"><div class="how-title"><div><span class="step-tag">A BETTER WAY TO WORK</span><h2>Structure without the busywork.</h2></div><p>Built to demonstrate practical AI orchestration, not autonomous publishing.</p></div>
+          <div class="how-grid"><div class="how-card"><div class="how-number">01</div><div class="how-icon">✳</div><h3>Understand</h3><p>An actual language model extracts deliverables, gaps, and dependencies from the request.</p></div><div class="how-card"><div class="how-number">02</div><div class="how-icon">≋</div><h3>Organize</h3><p>Generate role-based tasks and structured campaign data. Duplicates resolve to the same plan.</p></div><div class="how-card"><div class="how-number">03</div><div class="how-icon">✓</div><h3>Approve & hand off</h3><p>A human checks the result before the approved payload can move into an n8n workflow.</p></div></div>
+        </section>
+        <footer>AGENCYFLOW AI <span>·</span> INDEPENDENT PORTFOLIO PROJECT <span>·</span> NO CLIENT DATA</footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="accessDialog"><form method="dialog"><h3>Demo access code</h3><p>This demo is protected to keep AI usage costs predictable. Enter the code supplied by the project owner.</p><input type="password" id="accessCode" autocomplete="off" placeholder="Access code"><button id="saveCodeBtn" class="button button-primary" value="ok">Continue →</button></form></dialog>
+</body>
+</html>
