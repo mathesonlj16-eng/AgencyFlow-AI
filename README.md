@@ -135,7 +135,7 @@ Still not caught: the 4B's TikTok miscount survives the prompt fix. The count ch
 
 ## Optional: sync approved tasks to a sandbox Notion workspace
 
-After a plan is approved and stored in n8n, **Sync tasks to Notion** copies its tasks into a fictional sandbox Notion data source. Each task gets its own status and link, a retry fixes only what failed, and nothing counts as done until Notion is read back. It is off by default. Setup, field map, tests and limits are in [docs/notion-sync.md](docs/notion-sync.md).
+After a plan is approved and stored in n8n, **Sync tasks to Notion** copies its tasks into a fictional sandbox Notion data source. Each task gets its own status and link, a retry fixes only what failed, and nothing counts as done until Notion is read back. It is off by default. It was verified live against a separate fictional Notion workspace: 8/8 tasks created, then re-synced with the same 8 pages and no duplicates. Setup, field map, tests and limits are in [docs/notion-sync.md](docs/notion-sync.md).
 
 | Partial failure (one task's repair hit a rate limit) | After retry |
 |---|---|
@@ -161,7 +161,6 @@ A possible next rule: reject a `deadline_mention` that doesn't appear word for w
 - Deterministic brief checks: timing-word recovery and count warnings shown at review and approval
 
 **Not built**
-- A verified run against a real Notion workspace: it needs the owner's sandbox credentials. The sync is tested against a local Notion mock and one real unauthenticated call.
 - Other task tools (Asana, ClickUp)
 - User accounts, roles and multi-user locking (this is a single-user demo)
 - Sending client questions by email (questions are listed, never sent)

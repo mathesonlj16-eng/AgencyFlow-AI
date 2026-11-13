@@ -87,4 +87,18 @@ To turn writes off again, run `./scripts/notion-setup.ps1 -DataSourceId <id>` wi
 - Single-user demo: one sync per plan at a time (an app-side lock). Two n8n instances syncing the same plan at the same moment could still race between query and create. Notion has no unique constraint to prevent that.
 - Pages deleted in Notion are recreated on the next sync. Tasks removed from a plan aren't deleted from Notion, because plans are locked after approval.
 - Read-back uses one query page (up to 100 tasks), and plans are capped at 18 tasks.
-- The live end-to-end run against a real Notion workspace hasn't been done yet: it needs the owner's sandbox credentials (steps above). Everything else was tested against the mock and one real unauthenticated call.
+- Failure cases (partial batches, rate limits, lost responses, permission errors) were tested against the mock only. A real Notion workspace can't be made to fail on demand.
+
+## Live sandbox run (2026-11-13)
+
+Done against a separate free Notion workspace, **AgencyFlow AI Sandbox**, with fictional data only. Its internal integration can read, insert and update content on one private page. Comment, user-information and agent access are off.
+
+| Step | Result |
+|---|---|
+| `notion-connect.ps1` | Secret entered by the owner at the hidden prompt and stored encrypted in n8n. It never appeared in the repo, logs or chat |
+| `notion-setup.ps1 -ParentPageId … -Enable` | Data source "AgencyFlow AI tasks (fictional demo)" created under the shared page through the real 2025-09-03 API |
+| Sync 1 (approved, fictional patio-reopening plan, 8 tasks) | `complete`: 8/8 created and verified by reading Notion back |
+| Sync 2 (same plan) | `complete`: 8/8 updated, same 8 page links, no duplicates flagged |
+| `notion-setup.ps1 -DataSourceId …` (no `-Enable`) | "Writes enabled: False". A further sync was refused with `disabled` |
+
+![Live sandbox sync](screenshots/13-notion-live-sandbox-synced.png)
