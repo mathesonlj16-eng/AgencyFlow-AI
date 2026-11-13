@@ -61,11 +61,14 @@ http.createServer((req, res) => {
     const path = url.pathname;
     // ---- test control endpoints ----
     if (path === '/__reset') { pages = new Map(); failures = []; calls = []; return json(res, 200, { ok: true }); }
+    if (path === '/__clear_failures') { failures = []; return json(res, 200, { ok: true }); }
     if (path === '/__fail') { failures.push({ remaining: 1, skip: 0, code: 'internal_server_error', ...data }); return json(res, 200, { failures }); }
     if (path === '/__state') return json(res, 200, { pages: [...pages.values()].map(publicPage), calls, dataSources: [...dataSources.keys()] });
+    if (path === '/__edit') { const p = [...pages.values()].find(x => text(x.properties['External ref']) === data.external_ref); if (p) Object.assign(p.properties, normalize(data.properties)); return json(res, p ? 200 : 404, { ok: !!p }); }
     // ---- Notion API surface ----
     calls.push(`${req.method} ${path}`);
-    if (!/^Bearer \S+/.test(req.headers.authorization || '')) return notionError(res, 401, 'unauthorized', 'API token is invalid.');
+    const auth = (req.headers.authorization || '').trim();
+    if (!/^Bearer \S+/.test(auth) || auth === 'Bearer not-configured') return notionError(res, 401, 'unauthorized', 'API token is invalid.');
     if (req.headers['notion-version'] !== VERSION) return notionError(res, 400, 'invalid_request', `Mock requires Notion-Version ${VERSION}, got ${req.headers['notion-version']}`);
     let m;
     if (req.method === 'POST' && path === '/v1/databases') {
@@ -88,10 +91,15 @@ http.createServer((req, res) => {
     }
     if (req.method === 'POST' && path === '/v1/pages') {
       const ds = data.parent?.data_source_id;
-      if (data.parent?.type !== 'data_source_id' || !dataSources.has(ds)) { calls.push('rejected body: ' + body.slice(0, 300)); } if (data.parent?.type !== 'data_source_id' || !dataSources.has(ds)) return notionError(res, 400, 'validation_error', 'parent.data_source_id is required (legacy database_id parent is not accepted here).');
-      if (maybeFail('create', res)) return;
+      if (data.parent?.type !== 'data_source_id' || !dataSources.has(ds)) {
+        calls.push('rejected body: ' + body.slice(0, 300));
+        return notionError(res, 400, 'validation_error', 'parent.data_source_id is required (legacy database_id parent is not accepted here).');
+      }
+      const lost = failures.find(x => x.op === 'create_lost' && x.remaining > 0);
+      if (!lost && maybeFail('create', res)) return;
       const id = randomUUID();
       pages.set(id, { id, data_source_id: ds, properties: normalize(data.properties), edited: new Date().toISOString() });
+      if (lost) { lost.remaining--; return notionError(res, 502, 'internal_server_error', 'injected: page created but response lost'); }
       return json(res, 200, publicPage(pages.get(id)));
     }
     if (req.method === 'PATCH' && (m = path.match(/^\/v1\/pages\/([^/]+)$/))) {

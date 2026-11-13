@@ -75,7 +75,7 @@ def if_ok(name, pos, expr="={{ $json.ok }}"):
                        "combinator": "and"}, "options": {}})
 
 
-def notion_http(name, pos, method, url, body=None, **extra):
+def notion_http(name, pos, method, url, body=None, retry=True, **extra):
     """HTTP Request with the Notion credential, an explicit API version, pacing and retries.
     Errors become items (onError: continueRegularOutput) so one failed task never stops the batch."""
     params = {"method": method, "url": url, "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
@@ -84,8 +84,11 @@ def notion_http(name, pos, method, url, body=None, **extra):
               "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 350}}, "timeout": 20000}}
     if body is not None:
         params.update({"sendBody": True, "specifyBody": "json", "jsonBody": body})
-    return node(name, "n8n-nodes-base.httpRequest", 4.2, pos, params, credentials=CRED, retryOnFail=True,
-                maxTries=3, waitBetweenTries=1500, onError="continueRegularOutput", **extra)
+    # Reads retry automatically. Writes do NOT: if Notion created a page but the response was lost, an
+    # automatic retry would create a duplicate. A failed write is instead re-checked by external_ref on
+    # the next sync, which updates the page if it exists.
+    retry_opts = {"retryOnFail": True, "maxTries": 3, "waitBetweenTries": 1500} if retry else {"retryOnFail": False}
+    return node(name, "n8n-nodes-base.httpRequest", 4.2, pos, params, credentials=CRED, onError="continueRegularOutput", **retry_opts, **extra)
 
 
 # Shared JS helpers (inlined into Code nodes).
@@ -199,7 +202,7 @@ s5 = notion_http("Create sandbox database", [1100, 840], "POST", "={{ $json.sett
     "'Priority': { select: { options: [{ name: 'high', color: 'red' }, { name: 'medium', color: 'yellow' }, { name: 'low', color: 'gray' }] } }, "
     "'Due': { date: {} }, 'Description': { rich_text: {} }, 'Source': { rich_text: {} }, "
     "'Status': { select: { options: [{ name: 'To do', color: 'default' }, { name: 'In progress', color: 'blue' }, { name: 'Done', color: 'green' }] } } "
-    "} } }) }}"))
+    "} } }) }}"), retry=False)
 s6 = notion_http("Look up data source id", [1320, 840], "GET",
                  "={{ $('Check setup request').first().json.settings.notion_api_base }}/databases/{{ $json.id }}")
 nodes[-1]["parameters"]["headerParameters"]["parameters"][0]["value"] = "={{ $('Check setup request').first().json.settings.notion_version }}"
@@ -289,7 +292,7 @@ n11 = notion_http("Write page (create / update)", [2420, 1280],
                   ("={{ JSON.stringify($json.action === 'hold' ? { filter: { property: 'External ref', rich_text: { equals: '__agencyflow_hold__' } }, page_size: 1 } : $json.action === 'create' "
                    "? { parent: { type: 'data_source_id', data_source_id: $json.settings.notion_data_source_id }, "
                    "properties: Object.assign({}, $json.properties, { 'Status': { select: { name: 'To do' } } }) } "
-                   ": { properties: $json.properties }) }}"))
+                   ": { properties: $json.properties }) }}"), retry=False)
 # 'hold' items make a harmless read (an empty query) so the batch keeps its order; nothing is written.
 n12 = notion_http("Read back pages for this plan", [2640, 1280], "POST",
                   "={{ $('Check sync request').first().json.settings.notion_api_base }}/data_sources/{{ $('Check sync request').first().json.settings.notion_data_source_id }}/query",

@@ -13,6 +13,8 @@ const samples = {
 const EVENT_LABELS = {
   generated: 'AI draft generated', generation_failed: 'AI generation failed', model_output_repaired: 'Invalid model output repaired',
   rule_fix: 'Corrected by a rule (not the AI)',
+  notion_sync_complete: 'Notion: all tasks verified', notion_sync_partial: 'Notion: partial sync', notion_sync_failed: 'Notion: sync failed',
+  notion_sync_refused: 'Notion: sync refused by n8n',
   duplicate_reused: 'Duplicate brief: saved plan reused', edited: 'Draft edited', approved: 'Approved by reviewer',
   handoff_sent: 'Delivered to n8n', handoff_failed: 'n8n handoff failed', handoff_replay_blocked: 'Resend blocked (already delivered)',
 };
@@ -107,12 +109,35 @@ function renderHandoff(run) {
     const stored = a.tasks_stored != null ? `${escapeHtml(a.tasks_stored)} tasks stored in n8n` : `${escapeHtml(a.cards_prepared ?? '?')} tracker cards prepared`;
     return `<div class="handoff-card ok"><strong>✓ n8n acknowledged ${escapeHtml(a.event_id || run.event_id)}</strong>
       <span>${stored} · external actions: ${escapeHtml(a.external_actions || 'n/a')}</span>
-      <div id="trackerRows" class="tracker-rows"><span class="hint">Reading tasks back from n8n…</span></div></div>`;
+      <div id="trackerRows" class="tracker-rows"><span class="hint">Reading tasks back from n8n…</span></div></div>${renderNotion(run)}`;
   }
   if (run.last_error && run.status === 'approved') {
     return `<div class="handoff-card fail"><strong>Last handoff failed</strong><span>${escapeHtml(run.last_error)} The plan is still approved and nothing was marked as sent. Retry when n8n is back.</span></div>`;
   }
   return '';
+}
+
+function renderNotion(run) {
+  if (!settings.notion_sync_enabled) return '';
+  const s = run.notion_sync;
+  const label = {complete: '✓ All tasks verified in Notion', partial: 'Some tasks did not reach Notion', failed: 'Notion sync failed',
+                 disabled: 'Notion sync is disabled in n8n', not_configured: 'Notion sync is not set up in n8n'}[s?.status] || 'Notion sandbox';
+  const cls = s?.status === 'complete' ? 'ok' : s ? 'fail' : 'idle';
+  const rows = (s?.tasks || []).map(t => `<tr><td>${escapeHtml(t.title)}</td><td>${t.status?.startsWith('synced')
+      ? `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">open ↗</a>` : '—'}</td><td class="${t.status?.startsWith('synced') ? 'ok-text' : 'fail-text'}">${escapeHtml(t.status)}${t.error ? ': ' + escapeHtml(t.error) : ''}</td></tr>`).join('');
+  const btn = s?.status === 'complete' ? 'Re-sync to Notion ↻' : s ? 'Retry Notion sync ↻' : 'Sync tasks to Notion →';
+  return `<div class="handoff-card notion ${cls}"><strong>${label}</strong>
+    <span>${s ? `${s.synced}/${s.total} tasks verified by reading Notion back${s.error ? ' · ' + escapeHtml(s.error) : ''}` : 'Optional: copy these approved tasks into the fictional sandbox Notion workspace. Retries never duplicate pages.'}</span>
+    ${rows ? `<table class="tracker"><thead><tr><th>Task</th><th>Notion</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+    <div><button class="button button-outline" id="notionBtn" type="button">${btn}</button></div></div>`;
+}
+
+async function notionSync() {
+  const btn = el('notionBtn'); btn.disabled = true; btn.textContent = 'Syncing with Notion…';
+  try { const d = await api(`/api/runs/${current.id}/notion-sync`, {method: 'POST'}); current = d.run;
+        message({complete: 'All tasks verified in Notion.', partial: 'Partial sync: retry to finish the failed tasks.'}[d.sync.status] || (d.sync.error || 'Notion sync failed.')); }
+  catch (e) { message(e.message); current = (await api(`/api/runs/${current.id}`)).run; }
+  render();
 }
 
 function render() {
@@ -137,6 +162,7 @@ function render() {
   el('approveBtn')?.addEventListener('click', approve);
   el('exportBtn')?.addEventListener('click', exportPlan);
   el('handoffBtn')?.addEventListener('click', handoff);
+  el('notionBtn')?.addEventListener('click', notionSync);
   area.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => mutateList(b.dataset.add, null)));
   area.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => mutateList(b.dataset.remove, Number(b.dataset.i))));
   area.querySelectorAll('input,textarea,select').forEach(f => f.addEventListener('input', () => { dirty = true; }));

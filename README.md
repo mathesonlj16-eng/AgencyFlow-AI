@@ -18,7 +18,7 @@ AgencyFlow AI is a small, local-first operations tool for creative and creator a
 | 4B vs 7B on the same evaluation | 7B no better on this sample (95% tuned, 89% held-out), and larger; 4B kept as default | [Measure, improve, re-measure](#measure-improve-re-measure) |
 | Schema-valid output | 31/31 eval runs, all on the first attempt | same |
 | Time per plan (qwen3.5:4b, GTX 1650 4 GB) | 65–111 s | eval runs 65–92 s; brand-deal runs in the app 98–111 s |
-| Backend tests | 33 passing (model and webhook mocked) | `tests/` |
+| Tests | 39 unit (model and webhook mocked) + 11 live n8n integration tests against a Notion mock | `tests/` |
 | End-to-end, live | model → edit → approve → n8n stores tasks → read back; outage and retry; replay ignored; tampered resend 409 | video + below |
 
 ## Two-minute demo
@@ -72,7 +72,7 @@ flowchart LR
 - **Measure the human, not just the model.** The AI's first draft is stored immutably (`ai_plan_json`). `/api/runs/{id}/review` reports tasks kept, edited, removed and added, deliverable corrections and a deadline set by the reviewer. `/api/stats` aggregates this across approved plans.
 - **Three layers against duplicates.** The app never resends a `sent` run. The workflow ignores a repeated `event_id` (200 `duplicate_ignored`) and rejects the same id with different content (409). Task rows are upserted on a stable `external_ref`, so even a replay that got through could not create duplicate tasks.
 - **Proof, not acknowledgement.** The app doesn't trust n8n's 200 on its own. It reads the stored rows back through a second webhook and shows them.
-- **Outside writes are off.** The only node that would call an outside tool is an HTTP Request node that is disabled and labelled as such.
+- **Outside writes are opt-in.** The only external destination is a sandbox Notion workspace. It stays off until the owner stores a credential in n8n, enables it there, and sets `NOTION_SYNC_ENABLED=1` in the app. See [docs/notion-sync.md](docs/notion-sync.md).
 - **Audit trail.** Every generation, failure, repair, edit, approval, handoff and blocked replay is an append-only `events` row shown in the UI.
 
 ## Setup (Windows PowerShell)
@@ -95,7 +95,8 @@ All settings are environment variables, listed in [.env.example](.env.example). 
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install pytest httpx
-.\.venv\Scripts\python.exe -m pytest -q                         # 33 backend tests, model and webhook mocked
+.\.venv\Scripts\python.exe -m pytest -q                         # 39 unit tests, model and webhook mocked
+$env:AGENCYFLOW_LIVE = '1'; .\.venv\Scripts\python.exe -m pytest tests/integration -q   # 11 live tests: real n8n + Notion mock
 .\.venv\Scripts\python.exe evals\run_eval.py 2 --label my-run   # live: 7 briefs x 2 runs, about 20 minutes
 ```
 
@@ -132,6 +133,14 @@ Still not caught: the 4B's TikTok miscount survives the prompt fix. The count ch
 
 ![Count check warning](docs/screenshots/10-count-check-warning.png)
 
+## Optional: sync approved tasks to a sandbox Notion workspace
+
+After a plan is approved and stored in n8n, **Sync tasks to Notion** copies its tasks into a fictional sandbox Notion data source. Each task gets its own status and link, a retry fixes only what failed, and nothing counts as done until Notion is read back. It is off by default. Setup, field map, tests and limits are in [docs/notion-sync.md](docs/notion-sync.md).
+
+| Partial failure (one task's repair hit a rate limit) | After retry |
+|---|---|
+| ![](docs/screenshots/11-notion-partial-sync.png) | ![](docs/screenshots/12-notion-synced.png) |
+
 Full per-run detail is in [evals/RESULTS.md](evals/RESULTS.md).
 
 A possible next rule: reject a `deadline_mention` that doesn't appear word for word in the brief. I haven't added it, because the failure that motivated it came from a held-out brief, and fixing it would quietly turn the held-out set into a tuned one.
@@ -145,13 +154,15 @@ A possible next rule: reject a `deadline_mention` that doesn't appear word for w
 - Deterministic due dates, with a past-due warning and an extra approval prompt
 - Approval with locking, JSON export, and a review diff against the stored AI draft, with aggregate stats
 - Duplicate detection, SQLite persistence with in-place migration, history and a per-plan audit trail
-- n8n workflow: validation, replay and tamper protection, idempotent storage in an n8n data table, a read-back webhook, and a disabled outside write
+- n8n workflow: validation, replay and tamper protection, idempotent storage in an n8n data table, and a read-back webhook
+- Optional Notion sandbox sync: off by default, approval-gated, de-duplicated by `external_ref`, per-task status with partial retry, and success only after reading Notion back ([docs/notion-sync.md](docs/notion-sync.md))
 - Handoff failure handling with retry, a concurrent-send lock and stale-claim recovery
 - Live accuracy evaluation with hand-written expectations, a frozen baseline, held-out briefs and a 4B vs 7B comparison
 - Deterministic brief checks: timing-word recovery and count warnings shown at review and approval
 
 **Not built**
-- Writes to a real outside task tool (Asana, ClickUp, Notion). The node exists but stays disabled until an owner approves a destination and credentials.
+- A verified run against a real Notion workspace: it needs the owner's sandbox credentials. The sync is tested against a local Notion mock and one real unauthenticated call.
+- Other task tools (Asana, ClickUp)
 - User accounts, roles and multi-user locking (this is a single-user demo)
 - Sending client questions by email (questions are listed, never sent)
 - A hosted public demo, which would need auth, rate limiting and a paid or self-hosted model
@@ -175,6 +186,9 @@ A possible next rule: reject a `deadline_mention` that doesn't appear word for w
 | `static/` | Single-page UI (plain HTML, CSS and JS; no build step) |
 | `n8n/agencyflow-reviewed-webhook.json` | Importable n8n workflow (receiver, data-table storage, read-back) |
 | `scripts/start-demo-n8n.ps1` | Throwaway local n8n with the workflow published |
+| `scripts/notion-connect.ps1`, `scripts/notion-setup.ps1` | Owner-only: store the sandbox Notion secret in n8n (hidden prompt), create or enable the data source |
+| `n8n/build_workflow.py` | Generates the workflow JSON (receiver, storage, read-back, Notion setup and sync) |
+| `tests/notion_mock/`, `tests/integration/` | Notion API stand-in with failure injection, and live n8n tests against it |
 | `evals/` | Expectations, the live evaluation script and results |
 | `examples/` | Fictional briefs and captured live outputs |
 | `docs/` | Demo video and screenshots |
