@@ -123,7 +123,7 @@ function render() {
     current.latency_ms && `${(current.latency_ms / 1000).toFixed(0)}s`, `event ${current.event_id}`].filter(Boolean).join(' · ');
   let body = `<div class="notice ${editable ? '' : 'success'}">${editable
     ? 'AI-generated draft. Check every detail, fix anything wrong, then approve.'
-    : '✓ Human-approved and locked.' + (settings.handoff_enabled ? ' Ready to export or send to n8n.' : ' Ready to export.')}</div>`;
+    : '✓ Human-approved and locked.' + (current.status === 'sent' ? ' Delivered to n8n.' : settings.handoff_enabled ? ' Ready to export or send to n8n.' : ' Ready to export.')}</div>`;
   body += `<div class="run-meta">${escapeHtml(current.client_name || 'No client name')} · ${escapeHtml(meta)}</div>`;
   body += renderHandoff(current);
   body += editable ? renderEditable(p) : renderReadOnly(p);
@@ -167,7 +167,7 @@ async function loadStats() {
   try {
     const s = await api('/api/stats');
     el('stats').innerHTML = s.approved_runs
-      ? `Across <b>${s.approved_runs}</b> approved plan${s.approved_runs > 1 ? 's' : ''}, reviewers kept <b>${s.avg_ai_tasks_kept_unchanged_pct}%</b> of AI tasks unchanged, added tasks in ${s.runs_where_reviewer_added_tasks}, and confirmed the deadline themselves in ${s.runs_where_reviewer_set_deadline}. ${s.generated_runs} AI drafts, avg ${s.avg_generation_seconds}s, ${s.runs_needing_repair} needed a repair retry, ${s.generation_failures} failed.`
+      ? `Across <b>${s.approved_runs}</b> approved plan${s.approved_runs > 1 ? 's' : ''}, reviewers kept <b>${s.avg_ai_tasks_kept_unchanged_pct}%</b> of AI tasks unchanged, corrected deliverables in ${s.runs_with_deliverable_fixes}, added tasks in ${s.runs_where_reviewer_added_tasks} and set the deadline themselves in ${s.runs_where_reviewer_set_deadline}. ${s.generated_runs} AI draft${s.generated_runs === 1 ? '' : 's'} so far: avg ${s.avg_generation_seconds}s, ${s.runs_needing_repair} needed a repair retry, ${s.generation_failures} failed.`
       : '';
   } catch (_) {}
 }
