@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field
 from ai_client import ModelError, generate_plan, provider_settings
 from plan import Plan, schedule_tasks
 from review_diff import diff_plans, summarize
+from brief_checks import quantity_warnings
 
 BASE = Path(__file__).resolve().parent
 DB = Path(os.getenv("DB_PATH", str(BASE / "data" / "agencyflow.sqlite3")))
@@ -115,8 +116,10 @@ def event_id(run: dict[str, Any]) -> str:
 
 def run_obj(row: sqlite3.Row) -> dict[str, Any]:
     keys = row.keys()
+    plan = json.loads(row["plan_json"])
     return {"id": row["id"], "client_name": row["client_name"], "brief": row["brief"],
-            "plan": json.loads(row["plan_json"]), "status": row["status"],
+            "plan": plan, "status": row["status"],
+            "warnings": quantity_warnings(row["brief"], plan),  # recomputed after every edit
             "created_at": row["created_at"], "approved_at": row["approved_at"], "sent_at": row["sent_at"],
             "intake_key": row["intake_key"],
             "model": row["model"] if "model" in keys else None,
@@ -207,6 +210,8 @@ def analyze(intake: Intake, x_demo_code: str | None = Header(default=None)):
         if cur.rowcount:
             for err in generation.errors:
                 log_event(db, "model_output_repaired", err, row["id"], key)
+            for fix in generation.fixes:
+                log_event(db, "rule_fix", fix, row["id"], key)
             log_event(db, "generated", f"{generation.provider}/{generation.model}, attempt {generation.attempts}, {generation.latency_ms} ms", row["id"], key)
     return {"run": run_obj(row), "reused": not cur.rowcount}
 

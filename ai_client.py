@@ -20,6 +20,7 @@ from urllib.error import HTTPError, URLError
 
 from pydantic import ValidationError
 
+from brief_checks import timing_phrase
 from plan import Plan, SYSTEM_PROMPT, model_output_schema
 
 
@@ -39,6 +40,23 @@ class Generation:
     attempts: int
     latency_ms: int
     errors: list[str] = field(default_factory=list)
+    fixes: list[str] = field(default_factory=list)  # deterministic corrections applied after the model
+
+
+def apply_brief_fixes(plan: Plan, brief: str) -> list[str]:
+    """Recover the client's timing words when the model dropped them (never invents a date)."""
+    fixes = []
+    if not plan.deadline_mention:
+        phrase = timing_phrase(brief)
+        if phrase:
+            plan.deadline_mention = phrase
+            fixes.append(f"Copied the client's timing words from the brief: '{phrase}'.")
+    if not plan.deadline and plan.deadline_mention:
+        found = set(re.findall(r"\b\d{4}-\d{2}-\d{2}\b", plan.deadline_mention))
+        if len(found) == 1:
+            plan.deadline = found.pop()
+            fixes.append(f"Deadline {plan.deadline} taken from the date quoted in the brief.")
+    return fixes
 
 
 def provider_settings() -> tuple[str, str]:
@@ -136,7 +154,8 @@ def generate_plan(brief: str, client_name: str = "", max_attempts: int = 2) -> G
         content = _call(provider, model, messages, timeout)  # transport errors are not retried
         try:
             plan = normalize_model_response(content)
-            return Generation(plan, provider, model, attempt, int((time.monotonic() - started) * 1000), errors)
+            fixes = apply_brief_fixes(plan, brief)
+            return Generation(plan, provider, model, attempt, int((time.monotonic() - started) * 1000), errors, fixes)
         except ModelError as exc:
             errors.append(str(exc))
             # One repair round: show the model its own output and the exact validation problem.

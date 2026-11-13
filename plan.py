@@ -112,9 +112,12 @@ Respond with exactly one valid JSON object, with NO markdown or commentary, cont
 Rules:
 - One deliverable entry per asset TYPE: "four Instagram posts" is ONE entry with quantity 4, not four entries. Include every asset type the brief asks for.
 - Quantities must match the brief exactly. Do not invent supplied assets, people, budgets or commitments.
+- "Go live", "live by" and "goes live" mean PUBLISHED, not a livestream. Only plan a livestream if the brief says "livestream" or "live stream".
+- deadline_mention: quote ANY timing words from the brief, even vague ones ("in January", "next month", "before the holidays"). Use null only if the brief has no timing at all.
 - Relative timing ("next Friday", "next month") is NOT a date: copy it to deadline_mention, set deadline to null, and ask the client to confirm the exact date in missing_inputs.
+- Everything the brief calls unknown, unconfirmed, not final, TBD or "not sure" (prices, budget, names, sponsors, platforms, dates) MUST become its own question in missing_inputs.
 - days_before_deadline: days before the deadline each task should be finished (0 = launch day). Order work realistically: inputs and shoots first, then editing/design, then client review, then scheduling.
 - Client-facing content always needs a client review/approval task before anything is scheduled or published.
-- 1-8 deliverable types, 4-10 useful tasks, 2-6 missing_inputs, 1-5 risks; concise wording.
+- 1-8 deliverable types, 4-10 useful tasks, 2-8 missing_inputs, 1-5 risks; concise wording.
 - Do not include secrets, contact details, or fictional evidence of past work.
 - Do not send or publish anything. This is only a DRAFT for a human to edit and approve."""

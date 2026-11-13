@@ -101,6 +101,37 @@ def test_eval_scorer_counts_quantities_and_flags_misses():
     assert checks["date"] is True and checks["review"] is False  # TEST_PLAN has no review task
 
 
+def test_brief_checks_parse_counts_and_timing():
+    from brief_checks import stated_counts, timing_phrase
+    assert stated_counts("Deal is 2 TikToks, 1 YouTube integration and 3 Instagram stories") == {"tiktok": 2, "story": 3}
+    assert stated_counts("three Instagram reels, a caption for each reel") == {"reel": 3}  # "a" is not a count
+    assert stated_counts("2 short Facebook videos") == {"video": 2}
+    assert timing_phrase("launch a weekly series on YouTube in January") == "in January"
+    assert timing_phrase("menu launch next Friday, for the winter menu") == "next Friday"
+    assert timing_phrase("opens 2026-12-05, ideally before the holidays") == "2026-12-05"
+    assert timing_phrase("no timing here") is None
+
+
+def test_quantity_warning_flags_miscount_and_clears_after_fix(client):
+    brief = "Deal is 2 TikToks and 3 Instagram stories for a fictional oat-milk brand launch."
+    plan = json.loads(json.dumps(TEST_PLAN))
+    plan["deliverables"] = [{"name": "TikTok Live Stream", "channel": "TikTok", "quantity": 1, "notes": ""},
+                            {"name": "Instagram Stories", "channel": "Instagram", "quantity": 3, "notes": ""}]
+    with patch.object(app, "generate_plan", return_value=fake_generation(plan)):
+        run = client.post("/api/analyze", json={"brief": brief, "client_name": "X"}).json()["run"]
+    assert run["warnings"] == ["The brief asks for 2 tiktoks; the plan has 1."]
+    plan["deliverables"][0] = {"name": "TikTok video", "channel": "TikTok", "quantity": 2, "notes": ""}
+    assert client.put(f"/api/runs/{run['id']}/plan", json=plan).json()["run"]["warnings"] == []
+
+
+def test_generation_recovers_dropped_timing_words(monkeypatch):
+    plan = {**TEST_PLAN, "deadline_mention": None}
+    monkeypatch.setattr(ai_client, "_call", lambda *a: json.dumps(plan))
+    gen = ai_client.generate_plan("Jordan wants to launch a new weekly cooking series on YouTube in January.")
+    assert gen.plan.deadline_mention == "in January" and gen.plan.deadline is None
+    assert gen.fixes and "in January" in gen.fixes[0]
+
+
 def test_schema_sent_to_model_excludes_server_fields():
     schema = model_output_schema()
     assert "due_date" not in schema["$defs"]["Task"]["properties"]

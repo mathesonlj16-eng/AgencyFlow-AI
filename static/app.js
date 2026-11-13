@@ -12,6 +12,7 @@ const samples = {
 };
 const EVENT_LABELS = {
   generated: 'AI draft generated', generation_failed: 'AI generation failed', model_output_repaired: 'Invalid model output repaired',
+  rule_fix: 'Corrected by a rule (not the AI)',
   duplicate_reused: 'Duplicate brief: saved plan reused', edited: 'Draft edited', approved: 'Approved by reviewer',
   handoff_sent: 'Delivered to n8n', handoff_failed: 'n8n handoff failed', handoff_replay_blocked: 'Resend blocked (already delivered)',
 };
@@ -64,7 +65,8 @@ function renderEditable(p) {
     <span class="mention">${p.deadline_mention ? `Client said: “${escapeHtml(p.deadline_mention)}”` : 'No timing given in the brief'}</span></div>
     <p class="hint">${p.deadline ? 'Task due dates are calculated from this date.' : 'Relative dates are never guessed. Set the confirmed date to schedule every task.'}</p>
     ${pastCount(p) ? `<div class="warning-note past-note">! ${pastCount(p)} task${pastCount(p) > 1 ? 's are' : ' is'} due before today. Shorten their "days before deadline" or move the deadline.</div>` : ''}</div>`;
-  h += `<div class="plan-section"><h4>DELIVERABLES</h4>${p.deliverables.map((d, i) => `<div class="row-edit">
+  const warn = (current.warnings || []).map(w => `<div class="warning-note past-note">! ${escapeHtml(w)}</div>`).join('');
+  h += `<div class="plan-section"><h4>DELIVERABLES</h4>${warn}${p.deliverables.map((d, i) => `<div class="row-edit">
       ${input(d.name, `class="edit-field" data-list="deliverables" data-i="${i}" data-key="name" aria-label="Deliverable ${i + 1} name"`)}
       ${input(d.channel, `class="edit-field narrow" data-list="deliverables" data-i="${i}" data-key="channel" aria-label="Channel"`)}
       ${input(d.quantity, `type="number" min="1" max="40" class="edit-field qty" data-list="deliverables" data-i="${i}" data-key="quantity" aria-label="Quantity"`)}
@@ -218,6 +220,7 @@ async function approve() {
   if (!(await saveChanges(true))) return;
   if (!current.plan.deadline && !confirm('No deadline is confirmed, so tasks have no due dates. Approve anyway?')) return;
   if (pastCount(current.plan) && !confirm(`${pastCount(current.plan)} task(s) are due before today. Approve anyway?`)) return;
+  if ((current.warnings || []).length && !confirm(`Count check: ${current.warnings.join(' ')} Approve anyway?`)) return;
   if (!confirm('Approve this plan as reviewed? It will be locked for editing.')) return;
   try { const data = await api(`/api/runs/${current.id}/approve`, {method: 'POST'}); current = data.run; render(); loadHistory(); message('Approved. Nothing has been published.'); }
   catch (e) { message(e.message); }

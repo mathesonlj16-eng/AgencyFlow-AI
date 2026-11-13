@@ -43,8 +43,12 @@ def score(plan: dict, exp: dict) -> list[dict]:
     return checks
 
 
-def main():
-    runs_per = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+
+RUNS = ROOT / "evals" / "runs"
+ORDER = ["qwen3.5-4b-baseline", "qwen3.5-4b-improved", "qwen2.5-7b-improved"]
+
+
+def main(runs_per: int, label: str):
     spec = json.loads((ROOT / "evals" / "expectations.json").read_text(encoding="utf-8"))
     provider, model = provider_settings()
     results = []
@@ -55,51 +59,72 @@ def main():
             try:
                 gen = generate_plan(brief, exp["client"])
                 plan = schedule_tasks(gen.plan).model_dump()
-                checks = score(plan, exp)
-                row = {"brief": exp["file"], "run": n + 1, "valid": True, "attempts": gen.attempts,
-                       "seconds": round(time.monotonic() - started), "checks": checks, "plan": plan}
+                row = {"brief": exp["file"], "holdout": bool(exp.get("holdout")), "run": n + 1, "valid": True,
+                       "attempts": gen.attempts, "seconds": round(time.monotonic() - started),
+                       "rule_fixes": gen.fixes, "checks": score(plan, exp), "plan": plan}
             except ModelError as exc:
-                row = {"brief": exp["file"], "run": n + 1, "valid": False, "error": str(exc),
-                       "seconds": round(time.monotonic() - started), "checks": []}
+                row = {"brief": exp["file"], "holdout": bool(exp.get("holdout")), "run": n + 1, "valid": False,
+                       "error": str(exc), "seconds": round(time.monotonic() - started), "checks": []}
             passed = sum(c["ok"] for c in row["checks"])
             print(f"{exp['file']} run {n + 1}: {'valid' if row['valid'] else 'INVALID'} {passed}/{len(row['checks'])} in {row['seconds']}s", flush=True)
             results.append(row)
-    meta = {"model": f"{provider}/{model}", "runs_per_brief": runs_per,
+    meta = {"label": label, "model": f"{provider}/{model}", "runs_per_brief": runs_per,
             "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "host": "local laptop (GTX 1650 4 GB)"}
-    (ROOT / "evals" / "results.json").write_text(json.dumps({"meta": meta, "results": results}, indent=2), encoding="utf-8")
-    write_markdown(meta, results)
+    RUNS.mkdir(exist_ok=True)
+    (RUNS / f"{label}.json").write_text(json.dumps({"meta": meta, "results": results}, indent=2), encoding="utf-8")
+    write_report()
 
 
-def write_markdown(meta: dict, results: list[dict]):
-    valid = [r for r in results if r["valid"]]
-    all_checks = [c["ok"] for r in valid for c in r["checks"]]
-    by_kind = {}
-    for c in (c for r in valid for c in r["checks"]):
-        by_kind.setdefault(c["kind"], []).append(c["ok"])
-    lines = [f"# Model accuracy check", "",
-             f"Model `{meta['model']}`, {meta['runs_per_brief']} live run(s) per brief, finished {meta['finished_at']} on {meta['host']}. "
-             "Expectations were written by hand from each brief in [expectations.json](expectations.json); scoring is automatic ([run_eval.py](run_eval.py)).", "",
-             f"**{sum(all_checks)}/{len(all_checks)} checks passed ({round(100 * sum(all_checks) / max(1, len(all_checks)))}%)**, "
-             f"{len(valid)}/{len(results)} outputs schema-valid, "
-             f"{sum(1 for r in valid if r['attempts'] == 1)}/{len(valid)} valid on the first attempt.", "",
-             "| Check type | Passed |", "| --- | --- |"]
+def _pct(oks: list[bool]) -> str:
+    return f"{sum(oks)}/{len(oks)} ({round(100 * sum(oks) / len(oks))}%)" if oks else "not run"
+
+
+def write_report():
+    saved = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in RUNS.glob("*.json")}
+    labels = [l for l in ORDER if l in saved] + sorted(l for l in saved if l not in ORDER)
     names = {"quantity": "Deliverable quantities", "deadline": "Deadline handling", "deadline_mention": "Keeps client's timing words",
              "question": "Asks the right client questions", "task": "Includes essential tasks"}
-    for kind, oks in by_kind.items():
-        lines.append(f"| {names.get(kind, kind)} | {sum(oks)}/{len(oks)} |")
-    lines += ["", "| Brief | Run | Passed | Time | Failed checks |", "| --- | --- | --- | --- | --- |"]
-    for r in results:
-        if not r["valid"]:
-            lines.append(f"| {r['brief']} | {r['run']} | invalid output | {r['seconds']}s | {r['error']} |"); continue
-        fails = "; ".join(f"{c['label']} (got {c['got']!r})" if "got" in c else c["label"] for c in r["checks"] if not c["ok"]) or "none"
-        lines.append(f"| {r['brief']} | {r['run']} | {sum(c['ok'] for c in r['checks'])}/{len(r['checks'])} | {r['seconds']}s | {fails} |")
-    lines += ["", "Regex checks are a coarse proxy: they confirm a fact is present, not that the wording is good. Human review stays the control."]
-    (ROOT / "evals" / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    out = ["# Model accuracy check", "",
+           "Live runs scored automatically against facts written by hand from each brief ([expectations.json](expectations.json), "
+           "[run_eval.py](run_eval.py)). Briefs 01–05 were used while improving the prompt and rules; **briefs 06–07 are held out**: "
+           "their expectations were committed before any tuning and they were never used to tune. Nothing is mocked.", "",
+           "| Run | Model | Tuned briefs 01–05 | Held-out briefs 06–07 | Valid on 1st attempt | Avg time |",
+           "| --- | --- | --- | --- | --- | --- |"]
+    for l in labels:
+        rs = saved[l]["results"]; valid = [r for r in rs if r["valid"]]
+        tuned = [c["ok"] for r in valid if not r.get("holdout") and not r["brief"].startswith(("06", "07")) for c in r["checks"]]
+        held = [c["ok"] for r in valid if r.get("holdout") or r["brief"].startswith(("06", "07")) for c in r["checks"]]
+        avg = round(sum(r["seconds"] for r in rs) / len(rs)) if rs else 0
+        out.append(f"| `{l}` | {saved[l]['meta']['model']} | {_pct(tuned)} | {_pct(held)} | "
+                   f"{sum(1 for r in valid if r['attempts'] == 1)}/{len(rs)} | {avg}s |")
+    out += ["", "Baseline = the prompt before improvements. Improved = tighter prompt rules plus deterministic fixes in "
+            "[brief_checks.py](../brief_checks.py) (copies the client's timing words when the model drops them). "
+            "Count warnings shown to reviewers are not part of the score.", ""]
+    for l in labels:
+        rs = saved[l]["results"]; valid = [r for r in rs if r["valid"]]
+        out += [f"## `{l}`", "", f"{saved[l]['meta']['model']}, {saved[l]['meta']['runs_per_brief']} run(s) per brief, "
+                f"finished {saved[l]['meta']['finished_at']}.", "", "| Check type | Passed |", "| --- | --- |"]
+        by_kind: dict[str, list[bool]] = {}
+        for c in (c for r in valid for c in r["checks"]):
+            by_kind.setdefault(c["kind"], []).append(c["ok"])
+        out += [f"| {names.get(k, k)} | {_pct(v)} |" for k, v in by_kind.items()]
+        out += ["", "| Brief | Run | Passed | Time | Failed checks |", "| --- | --- | --- | --- | --- |"]
+        for r in rs:
+            if not r["valid"]:
+                out.append(f"| {r['brief']} | {r['run']} | invalid output | {r['seconds']}s | {r['error']} |"); continue
+            fails = "; ".join(f"{c['label']} (got {c['got']!r})" if "got" in c else c["label"] for c in r["checks"] if not c["ok"]) or "none"
+            out.append(f"| {r['brief']} | {r['run']} | {sum(c['ok'] for c in r['checks'])}/{len(r['checks'])} | {r['seconds']}s | {fails} |")
+        out.append("")
+    out.append("Regex checks are a coarse proxy: they confirm a fact is present, not that the plan is good. Human review stays the control.")
+    (ROOT / "evals" / "RESULTS.md").write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--report"]:
-        saved = json.loads((ROOT / "evals" / "results.json").read_text(encoding="utf-8"))
-        write_markdown(saved["meta"], saved["results"])
+    args = sys.argv[1:]
+    if args == ["--report"]:
+        write_report()
     else:
-        main()
+        label = args[args.index("--label") + 1] if "--label" in args else "adhoc"
+        nums = [a for a in args if a.isdigit()]
+        main(int(nums[0]) if nums else 1, label)
+

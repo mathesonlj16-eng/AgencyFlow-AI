@@ -1,16 +1,24 @@
 # Model accuracy check
 
-Model `ollama/qwen3.5:4b`, 2 live run(s) per brief, finished 2026-11-13T04:17:08+00:00 on local laptop (GTX 1650 4 GB). Expectations were written by hand from each brief in [expectations.json](expectations.json); scoring is automatic ([run_eval.py](run_eval.py)).
+Live runs scored automatically against facts written by hand from each brief ([expectations.json](expectations.json), [run_eval.py](run_eval.py)). Briefs 01–05 were used while improving the prompt and rules; **briefs 06–07 are held out**: their expectations were committed before any tuning and they were never used to tune. Nothing is mocked.
 
-**76/82 checks passed (93%)**, 10/10 outputs schema-valid, 10/10 valid on the first attempt.
+| Run | Model | Tuned briefs 01–05 | Held-out briefs 06–07 | Valid on 1st attempt | Avg time |
+| --- | --- | --- | --- | --- | --- |
+| `qwen3.5-4b-baseline` | ollama/qwen3.5:4b | 76/82 (93%) | not run | 10/10 | 79s |
+
+Baseline = the prompt before improvements. Improved = tighter prompt rules plus deterministic fixes in [brief_checks.py](../brief_checks.py) (copies the client's timing words when the model drops them). Count warnings shown to reviewers are not part of the score.
+
+## `qwen3.5-4b-baseline`
+
+ollama/qwen3.5:4b, 2 run(s) per brief, finished 2026-11-13T04:17:08+00:00.
 
 | Check type | Passed |
 | --- | --- |
-| Deliverable quantities | 26/28 |
-| Deadline handling | 10/10 |
-| Keeps client's timing words | 8/10 |
-| Asks the right client questions | 12/14 |
-| Includes essential tasks | 20/20 |
+| Deliverable quantities | 26/28 (93%) |
+| Deadline handling | 10/10 (100%) |
+| Keeps client's timing words | 8/10 (80%) |
+| Asks the right client questions | 12/14 (86%) |
+| Includes essential tasks | 20/20 (100%) |
 
 | Brief | Run | Passed | Time | Failed checks |
 | --- | --- | --- | --- | --- |
@@ -25,4 +33,4 @@ Model `ollama/qwen3.5:4b`, 2 live run(s) per brief, finished 2026-11-13T04:17:08
 | 05-creator-youtube-launch.txt | 1 | 8/9 | 80s | keeps the client's timing words ('january') (got '') |
 | 05-creator-youtube-launch.txt | 2 | 8/9 | 76s | keeps the client's timing words ('january') (got '') |
 
-Regex checks are a coarse proxy: they confirm a fact is present, not that the wording is good. Human review stays the control.
+Regex checks are a coarse proxy: they confirm a fact is present, not that the plan is good. Human review stays the control.
