@@ -1,0 +1,35 @@
+/* Optional AgencyFlow campaign discovery surface; isolated from the existing design. */
+.campaign-context {
+  margin: 24px 0;
+  padding: 22px;
+  background: rgba(17, 31, 53, .88);
+  border: 1px solid rgba(125, 151, 190, .25);
+  border-radius: 15px;
+}
+.context-head h3 { font-size: 1.18rem; margin: 9px 0 6px; }
+.context-head p { margin: 0 0 18px; color: #aebbd0; line-height: 1.55; font-size: .9rem; }
+.context-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.context-field { padding: 13px; border: 1px solid rgba(145, 166, 199, .2); border-radius: 10px; min-width: 0; }
+.context-field label { display: block; font-weight: 650; font-size: .87rem; margin-bottom: 4px; }
+.context-hint { color: #aab9cd; font-size: .78rem; margin: 0 0 8px; }
+.context-inputs { display: grid; gap: 8px; }
+.context-inputs input, .context-inputs select, .context-source {
+  width: 100%; min-width: 0; padding: 10px; background: #111d30; border: 1px solid rgba(153, 179, 212, .36);
+  border-radius: 7px; color: #eef4ff; font: inherit; font-size: .83rem;
+}
+.context-inputs input:disabled, .context-inputs select:disabled, .context-source:disabled { opacity: .64; }
+.context-source { margin-top: 8px; }
+.context-more { margin-top: 14px; }
+.context-more summary { padding: 10px 0; cursor: pointer; font-weight: 600; color: #d6e4ff; }
+.context-more[open] .context-grid { padding-top: 10px; }
+.context-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; }
+.context-actions span { font-size: .83rem; color: #c4d2e5; }
+.context-questions { margin-top: 15px; border-left: 2px solid #6687cb; padding: 9px 0 9px 13px; color: #d6e4f9; }
+.context-questions strong { font-size: .88rem; }
+.context-questions ul { margin: 8px 0; padding-left: 18px; font-size: .83rem; line-height: 1.5; }
+.context-questions p, .context-complete { font-size: .8rem; color: #aab9cd; }
+.context-complete { margin: 12px 0; }
+@media (max-width: 720px) {
+  .campaign-context { padding: 14px; }
+  .context-grid { grid-template-columns: minmax(0, 1fr); }
+}
