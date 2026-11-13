@@ -45,6 +45,26 @@
       "deadline_mention": "january",
       "questions": [{"label": "asks for the series name", "match": "name"}, {"label": "asks about the sponsor", "match": "sponsor"}],
       "tasks": [{"label": "client review", "match": "review|approv"}, {"label": "deals with editor availability", "match": "editor"}]
+    },
+    {
+      "file": "06-bakery-holiday-preorders-HOLDOUT.txt",
+      "client": "Rise & Crumb Bakery (fictional)",
+      "holdout": true,
+      "quantities": [{"label": "5 carousel posts", "match": "carousel|instagram", "expect": 5}, {"label": "2 Facebook videos", "match": "facebook|video", "expect": 2}, {"label": "1 newsletter email", "match": "email|newsletter", "expect": 1}],
+      "deadline": "2026-12-05",
+      "deadline_mention": "2026-12-05",
+      "questions": [{"label": "asks for the price list", "match": "pric"}, {"label": "asks about gluten-free", "match": "gluten"}],
+      "tasks": [{"label": "owner review of drafts", "match": "review|approv"}, {"label": "film the bakers", "match": "film|shoot|video|record"}]
+    },
+    {
+      "file": "07-creator-podcast-launch-HOLDOUT.txt",
+      "client": "Priya podcast launch (fictional)",
+      "holdout": true,
+      "quantities": [{"label": "4 audiograms", "match": "audiogram", "expect": 4}, {"label": "1 trailer episode", "match": "trailer", "expect": 1}, {"label": "6 YouTube Shorts", "match": "short", "expect": 6}],
+      "deadline": null,
+      "deadline_mention": "spring",
+      "questions": [{"label": "asks about the hosting platform", "match": "host|platform"}, {"label": "asks about budget", "match": "budget"}, {"label": "asks for a launch date", "match": "date|when|spring"}],
+      "tasks": [{"label": "legal sign-off on sponsor mentions", "match": "legal"}, {"label": "cover art design", "match": "cover|art"}]
     }
   ]
 }
