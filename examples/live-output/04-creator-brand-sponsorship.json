@@ -1,0 +1,126 @@
+{
+  "note": "Unedited AI draft captured from a live local run (Ollama qwen3.5:4b). Not yet reviewed by a person.",
+  "status": "review",
+  "model": "qwen3.5:4b",
+  "attempts": 1,
+  "latency_ms": 98103,
+  "client_name": "Maya x Oatfield (fictional)",
+  "brief": "From the creator's manager: Maya (lifestyle creator, ~240k on TikTok, 90k on YouTube) just signed a sponsorship with a fictional oat-milk brand, Oatfield. Deal is 2 TikToks, 1 YouTube integration (60-90 sec inside a regular vlog) and 3 Instagram stories with a swipe-up link. Brand wants the first TikTok live by 2026-12-01 and needs to approve scripts before filming. They sent a brand guidelines PDF but no talking points yet. Usage rights and whether we need the paid-partnership label on stories aren't clear in the contract. Maya is travelling Nov 20-24 so no filming then.",
+  "plan": {
+    "campaign_name": "Oatfield x Maya Partnership",
+    "summary": "Produce a TikTok live, YouTube integration, and Instagram stories for lifestyle creator Maya, requiring script approval before her November travel dates. Key risks include missing talking points and unclear contract terms regarding usage rights and partnership labels.",
+    "deadline_mention": "first TikTok live by 2026-12-01",
+    "deadline": "2026-12-01",
+    "deliverables": [
+      {
+        "name": "TikTok Live Stream",
+        "channel": "TikTok",
+        "quantity": 1,
+        "notes": "Must include brand integration; requires script approval before filming."
+      },
+      {
+        "name": "YouTube Video Integration",
+        "channel": "YouTube",
+        "quantity": 1,
+        "notes": "60-90 second segment within a regular vlog format."
+      },
+      {
+        "name": "Instagram Stories",
+        "channel": "Instagram",
+        "quantity": 3,
+        "notes": "Must include swipe-up link; verify need for paid-partnership label per contract."
+      }
+    ],
+    "tasks": [
+      {
+        "title": "Request talking points and review brand guidelines PDF",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Contact Maya's manager to obtain specific talking points and confirm receipt of brand guidelines.",
+        "days_before_deadline": 30,
+        "due_date": "2026-11-01"
+      },
+      {
+        "title": "Draft scripts for TikTok live and YouTube integration",
+        "role": "copywriter",
+        "priority": "high",
+        "detail": "Create draft scripts incorporating Oatfield messaging based on received talking points.",
+        "days_before_deadline": 25,
+        "due_date": "2026-11-06"
+      },
+      {
+        "title": "Submit scripts to client for approval",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Send drafts to Maya for review and sign-off before any filming occurs.",
+        "days_before_deadline": 24,
+        "due_date": "2026-11-07"
+      },
+      {
+        "title": "Clarify contract terms on usage rights and partnership labels",
+        "role": "producer",
+        "priority": "medium",
+        "detail": "Review contract with legal team to confirm if paid-partnership label is required for Instagram stories.",
+        "days_before_deadline": 20,
+        "due_date": "2026-11-11"
+      },
+      {
+        "title": "Plan filming schedule around Maya's travel dates (Nov 20-24)",
+        "role": "producer",
+        "priority": "medium",
+        "detail": "Schedule TikTok live and YouTube shoot for early November to avoid travel conflict.",
+        "days_before_deadline": 15,
+        "due_date": "2026-11-16"
+      },
+      {
+        "title": "Film TikTok live and YouTube integration",
+        "role": "videographer",
+        "priority": "medium",
+        "detail": "Execute shoots using approved scripts; ensure brand assets are used correctly.",
+        "days_before_deadline": 10,
+        "due_date": "2026-11-21"
+      },
+      {
+        "title": "Edit TikTok live and YouTube video",
+        "role": "editor",
+        "priority": "medium",
+        "detail": "Post-produce footage, add captions, and integrate brand elements.",
+        "days_before_deadline": 5,
+        "due_date": "2026-11-26"
+      },
+      {
+        "title": "Design Instagram stories with swipe-up link",
+        "role": "designer",
+        "priority": "medium",
+        "detail": "Create story assets based on confirmed label requirements and brand guidelines.",
+        "days_before_deadline": 5,
+        "due_date": "2026-11-26"
+      },
+      {
+        "title": "Client review of all edited content and story designs",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Present final assets to Maya for approval before scheduling or publishing.",
+        "days_before_deadline": 2,
+        "due_date": "2026-11-29"
+      },
+      {
+        "title": "Schedule TikTok live, YouTube video, and Instagram stories",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Publish content on launch day (Dec 1 for TikTok live).",
+        "days_before_deadline": 0,
+        "due_date": "2026-12-01"
+      }
+    ],
+    "missing_inputs": [
+      "What is the exact date and time Maya wants to host the first TikTok live?",
+      "Does the contract explicitly require the paid-partnership label on Instagram stories, or should we assume no?"
+    ],
+    "risks": [
+      "Maya's travel dates (Nov 20-24) limit available filming windows.",
+      "Unclear contract terms regarding usage rights and partnership labels could cause legal delays.",
+      "Client may not provide talking points in time for script approval before filming."
+    ]
+  }
+}

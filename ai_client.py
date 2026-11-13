@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from urllib.request import Request, urlopen
@@ -85,6 +86,13 @@ def normalize_model_response(content: str) -> Plan:
             for task in result.get("tasks") or []:
                 if isinstance(task, dict):
                     task.pop("due_date", None)
+            # Small models sometimes quote an absolute date but leave `deadline` empty.
+            # Recover it only when the quoted words contain one unambiguous ISO date.
+            mention = result.get("deadline_mention")
+            if not result.get("deadline") and isinstance(mention, str):
+                found = set(re.findall(r"\b\d{4}-\d{2}-\d{2}\b", mention))
+                if len(found) == 1:
+                    result["deadline"] = found.pop()
         return Plan.model_validate(result)
     except ValidationError as exc:
         problems = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors()[:6])

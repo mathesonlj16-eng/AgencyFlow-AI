@@ -24,3 +24,4 @@
 @media(max-width:1250px){.lower-grid{grid-template-columns:1fr}}
 @media(max-width:740px){.task-fields,.edit-field.detail{margin-left:0;width:100%}.row-edit{flex-wrap:wrap}.edit-field.narrow{flex:1 1 100px}}
 .plan-area{max-height:none;overflow:visible;padding-right:0}.task-fields .edit-field.qty{flex:none;width:72px;height:auto}.task-fields label{text-transform:none}.task-fields label span{text-transform:uppercase}
+.due.past,.task-detail .past{color:#c0392b}.past-note{margin-top:10px;background:#fdecea;color:#9b2c22}

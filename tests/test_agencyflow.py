@@ -81,6 +81,14 @@ def test_model_supplied_due_dates_are_ignored():
     assert normalize_model_response(json.dumps(plan)).tasks[0].due_date is None
 
 
+def test_quoted_iso_date_is_recovered_but_relative_words_are_not():
+    quoted = {**TEST_PLAN, "deadline_mention": "first TikTok live by 2026-12-01", "deadline": None}
+    assert normalize_model_response(json.dumps(quoted)).deadline == "2026-12-01"
+    assert normalize_model_response(json.dumps(TEST_PLAN)).deadline is None  # "next Friday" stays unconfirmed
+    two = {**TEST_PLAN, "deadline_mention": "2026-12-01 or 2026-12-08", "deadline": None}
+    assert normalize_model_response(json.dumps(two)).deadline is None  # ambiguous: a person decides
+
+
 def test_schema_sent_to_model_excludes_server_fields():
     schema = model_output_schema()
     assert "due_date" not in schema["$defs"]["Task"]["properties"]

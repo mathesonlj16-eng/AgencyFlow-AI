@@ -1,0 +1,115 @@
+{
+  "note": "Unedited AI draft captured from a live local run (Ollama qwen3.5:4b). Not yet reviewed by a person.",
+  "status": "review",
+  "model": "qwen3.5:4b",
+  "attempts": 1,
+  "latency_ms": 84503,
+  "client_name": "Jordan's Kitchen series (fictional)",
+  "brief": "hey!! so Jordan wants to launch a new weekly cooking series on YouTube in January. first episode + a trailer, plus shorts cut from each episode (like 3 per ep?). he wants a new thumbnail style and channel banner for the series too. editor is booked through the holidays tho. no name for the series yet, he's deciding between two. can you guys put together a plan and tell us what you need from him? also the sponsor from last month might want in but nothing is confirmed",
+  "plan": {
+    "campaign_name": "Jordan's Kitchen YouTube Series Launch",
+    "summary": "Produce a trailer, first episode, three shorts, new thumbnail style, and channel banner for an unbranded cooking series launching in January. The plan accounts for the editor's holiday schedule and requires confirmation on the exact launch date and sponsor details.",
+    "deadline_mention": "January",
+    "deadline": null,
+    "deliverables": [
+      {
+        "name": "YouTube Trailer",
+        "channel": "YouTube",
+        "quantity": 1,
+        "notes": "Promotional video for the new series"
+      },
+      {
+        "name": "First Episode",
+        "channel": "YouTube",
+        "quantity": 1,
+        "notes": "Full-length cooking episode"
+      },
+      {
+        "name": "Shorts",
+        "channel": "YouTube Shorts",
+        "quantity": 3,
+        "notes": "Cut from first episode"
+      },
+      {
+        "name": "Thumbnail Style Pack",
+        "channel": "YouTube",
+        "quantity": 1,
+        "notes": "New design assets for the series"
+      },
+      {
+        "name": "Channel Banner",
+        "channel": "YouTube",
+        "quantity": 1,
+        "notes": "Updated channel art"
+      }
+    ],
+    "tasks": [
+      {
+        "title": "Client review of all deliverables",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Present episode, shorts, trailer, and graphics for approval before scheduling.",
+        "days_before_deadline": 18,
+        "due_date": null
+      },
+      {
+        "title": "Edit first episode and cut shorts",
+        "role": "editor",
+        "priority": "medium",
+        "detail": "Complete full edit and create three short-form clips from the episode.",
+        "days_before_deadline": 15,
+        "due_date": null
+      },
+      {
+        "title": "Design new thumbnail style and banner",
+        "role": "designer",
+        "priority": "medium",
+        "detail": "Create assets based on client's chosen name (once confirmed).",
+        "days_before_deadline": 14,
+        "due_date": null
+      },
+      {
+        "title": "Execute filming and gather assets",
+        "role": "cameraperson",
+        "priority": "high",
+        "detail": "Film first episode and capture B-roll for shorts.",
+        "days_before_deadline": 12,
+        "due_date": null
+      },
+      {
+        "title": "Schedule filming with editor",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Book first episode shoot immediately as editor is booked through holidays.",
+        "days_before_deadline": 10,
+        "due_date": null
+      },
+      {
+        "title": "Confirm series name and sponsor status",
+        "role": "producer",
+        "priority": "high",
+        "detail": "Ask client to select between two names and confirm if the previous month's sponsor is still interested.",
+        "days_before_deadline": 5,
+        "due_date": null
+      },
+      {
+        "title": "Schedule uploads and publish",
+        "role": "producer",
+        "priority": "medium",
+        "detail": "Upload content to YouTube channels on the confirmed January launch date.",
+        "days_before_deadline": 0,
+        "due_date": null
+      }
+    ],
+    "missing_inputs": [
+      "What is the exact launch date in January?",
+      "Which of the two proposed series names should be used?",
+      "Is the sponsor from last month still active for this project?"
+    ],
+    "risks": [
+      "Editor availability conflict due to holiday booking",
+      "Unclear campaign name delays design and branding work",
+      "Unconfirmed sponsorship may impact budget or resources"
+    ]
+  }
+}
