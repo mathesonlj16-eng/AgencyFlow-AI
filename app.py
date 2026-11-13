@@ -398,6 +398,11 @@ def tracker(event_id: str | None = None, x_demo_code: str | None = Header(defaul
     return {"tasks": rows}
 
 
+# The optional discovery endpoints are isolated from the AI plan/n8n payload.
+from campaign_router import router as campaign_router
+app.include_router(campaign_router)
+
+
 app.mount("/assets", StaticFiles(directory=BASE / "static"), name="assets")
 
 

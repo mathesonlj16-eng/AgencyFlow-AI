@@ -13,6 +13,7 @@ const samples = {
 const EVENT_LABELS = {
   generated: 'AI draft generated', generation_failed: 'AI generation failed', model_output_repaired: 'Invalid model output repaired',
   rule_fix: 'Corrected by a rule (not the AI)',
+  campaign_context_updated: 'Campaign discovery saved',
   duplicate_reused: 'Duplicate brief: saved plan reused', edited: 'Draft edited', approved: 'Approved by reviewer',
   handoff_sent: 'Delivered to n8n', handoff_failed: 'n8n handoff failed', handoff_replay_blocked: 'Resend blocked (already delivered)',
 };
@@ -141,6 +142,7 @@ function render() {
   area.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => mutateList(b.dataset.remove, Number(b.dataset.i))));
   area.querySelectorAll('input,textarea,select').forEach(f => f.addEventListener('input', () => { dirty = true; }));
   loadActivity();
+  window.AgencyFlowCampaignContext?.mount(current, api);
   if (el('trackerRows')) loadTracker(current.event_id);
   if (!editable) loadReview(current.id);
 }
@@ -210,6 +212,10 @@ function mutateList(list, index) {
 
 // ---------- actions ----------
 async function saveChanges(quiet = false) {
+  if (window.AgencyFlowCampaignContext && !(await window.AgencyFlowCampaignContext.savePending())) {
+    message('Fix or save the campaign context before continuing.');
+    return false;
+  }
   try {
     const data = await api(`/api/runs/${current.id}/plan`, {method: 'PUT', body: JSON.stringify(formPlan())});
     current = data.run; render(); if (!quiet) message('Draft saved. Due dates recalculated.'); return true;
@@ -247,7 +253,8 @@ async function handoff() {
 async function analyze() {
   const brief = el('brief').value.trim(), client_name = el('client').value.trim();
   if (brief.length < 30) { message('Add at least 30 characters of brief details.'); return; }
-  if (dirty && !confirm('You have unsaved edits on the current plan. Discard them?')) return;
+  if ((dirty || window.AgencyFlowCampaignContext?.isDirty()) && !confirm('You have unsaved edits on the current plan. Discard them?')) return;
+  window.AgencyFlowCampaignContext?.discardPending();
   const button = el('analyzeBtn'); button.disabled = true;
   const started = Date.now();
   const tick = () => { el('analyzeText').textContent = `Local AI is drafting… ${Math.round((Date.now() - started) / 1000)}s`; };
@@ -271,7 +278,8 @@ async function loadHistory() {
         <span class="pill ${r.status}">${STATUS_LABELS[r.status] || r.status}</span></button>`).join('')
       : '<p class="hint">No plans yet. Generate one from a sample brief.</p>';
     el('history').querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', async () => {
-      if (dirty && !confirm('Discard unsaved edits?')) return;
+      if ((dirty || window.AgencyFlowCampaignContext?.isDirty()) && !confirm('Discard unsaved edits?')) return;
+      window.AgencyFlowCampaignContext?.discardPending();
       current = (await api(`/api/runs/${b.dataset.run}`)).run; render(); loadHistory();
       el('client').value = current.client_name; el('brief').value = current.brief; el('brief').dispatchEvent(new Event('input'));
     }));
@@ -298,5 +306,5 @@ el('saveCodeBtn').addEventListener('click', () => {
   savedCode = el('accessCode').value; try { sessionStorage.setItem('agencyflow_code', savedCode); } catch (_) {}
   message('Code saved for this session.'); initialize();
 });
-window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', (e) => { if (dirty || window.AgencyFlowCampaignContext?.isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 initialize(); render();
