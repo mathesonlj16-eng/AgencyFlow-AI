@@ -140,6 +140,36 @@ function render() {
   area.querySelectorAll('input,textarea,select').forEach(f => f.addEventListener('input', () => { dirty = true; }));
   loadActivity();
   if (el('trackerRows')) loadTracker(current.event_id);
+  if (!editable) loadReview(current.id);
+}
+
+async function loadReview(runId) {
+  try {
+    const r = await api(`/api/runs/${runId}/review`);
+    if (!r.available || current?.id !== runId) return;
+    const d = r.diff, t = d.tasks;
+    const items = [
+      `<b>${t.kept} of ${t.ai_count}</b> AI tasks kept unchanged`,
+      t.edited.length && `${t.edited.length} edited (${t.edited.map(e => escapeHtml(e.changed.join('/'))).join(', ')})`,
+      t.removed.length && `${t.removed.length} removed`,
+      t.added.length && `${t.added.length} added by reviewer: ${t.added.map(escapeHtml).join('; ')}`,
+      d.deadline.set_by_reviewer && `deadline ${escapeHtml(d.deadline.approved)} confirmed by reviewer (AI left it open)`,
+      (d.deliverables.edited.length || d.deliverables.added.length || d.deliverables.removed.length) && 'deliverables corrected',
+      d.missing_inputs.added.length && `${d.missing_inputs.added.length} client question(s) added`,
+    ].filter(Boolean);
+    const box = document.createElement('div'); box.className = 'review-card';
+    box.innerHTML = `<div class="tracker-title review-title">Reviewer vs AI draft</div><ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    el('planArea').querySelector('.run-meta')?.after(box);
+  } catch (_) {}
+}
+
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    el('stats').innerHTML = s.approved_runs
+      ? `Across <b>${s.approved_runs}</b> approved plan${s.approved_runs > 1 ? 's' : ''}, reviewers kept <b>${s.avg_ai_tasks_kept_unchanged_pct}%</b> of AI tasks unchanged, added tasks in ${s.runs_where_reviewer_added_tasks}, and confirmed the deadline themselves in ${s.runs_where_reviewer_set_deadline}. ${s.generated_runs} AI drafts, avg ${s.avg_generation_seconds}s, ${s.runs_needing_repair} needed a repair retry, ${s.generation_failures} failed.`
+      : '';
+  } catch (_) {}
 }
 
 async function loadTracker(eventId) {
@@ -230,6 +260,7 @@ async function analyze() {
 }
 
 async function loadHistory() {
+  loadStats();
   try {
     const {runs} = await api('/api/runs');
     el('history').innerHTML = runs.length ? runs.map(r => `<button type="button" class="history-item ${current && current.id === r.id ? 'active' : ''}" data-run="${r.id}">

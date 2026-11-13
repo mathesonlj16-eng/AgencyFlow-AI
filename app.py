@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 
 from ai_client import ModelError, generate_plan, provider_settings
 from plan import Plan, schedule_tasks
+from review_diff import diff_plans, summarize
 
 BASE = Path(__file__).resolve().parent
 DB = Path(os.getenv("DB_PATH", str(BASE / "data" / "agencyflow.sqlite3")))
@@ -39,7 +40,7 @@ app = FastAPI(title="AgencyFlow AI", version="0.2.0", docs_url=None, redoc_url=N
 RUN_COLUMNS = {  # added after v0.1; migrated in place on startup
     "model": "TEXT", "attempts": "INTEGER", "latency_ms": "INTEGER",
     "handoff_attempts": "INTEGER NOT NULL DEFAULT 0", "last_error": "TEXT", "handoff_response": "TEXT",
-    "sending_since": "TEXT",
+    "sending_since": "TEXT", "ai_plan_json": "TEXT",
 }
 STALE_SENDING_SECONDS = 120  # a 'sending' claim older than this (e.g. server crashed mid-send) may be retried
 
@@ -198,9 +199,10 @@ def analyze(intake: Intake, x_demo_code: str | None = Header(default=None)):
     plan = schedule_tasks(generation.plan)
     with connect() as db:
         # INSERT OR IGNORE: if a concurrent identical request won the race, keep its row.
-        cur = db.execute("""INSERT OR IGNORE INTO runs(intake_key,client_name,brief,plan_json,created_at,model,attempts,latency_ms)
-                            VALUES (?,?,?,?,?,?,?,?)""",
-                         (key, client, brief, plan.model_dump_json(), utcnow(), generation.model, generation.attempts, generation.latency_ms))
+        # ai_plan_json is written once and never edited: it is the baseline for review stats.
+        cur = db.execute("""INSERT OR IGNORE INTO runs(intake_key,client_name,brief,plan_json,ai_plan_json,created_at,model,attempts,latency_ms)
+                            VALUES (?,?,?,?,?,?,?,?,?)""",
+                         (key, client, brief, plan.model_dump_json(), plan.model_dump_json(), utcnow(), generation.model, generation.attempts, generation.latency_ms))
         row = db.execute("SELECT * FROM runs WHERE intake_key=?", (key,)).fetchone()
         if cur.rowcount:
             for err in generation.errors:
@@ -231,6 +233,33 @@ def run_events(run_id: int, x_demo_code: str | None = Header(default=None)):
         rows = db.execute("SELECT kind,detail,created_at FROM events WHERE run_id=? OR (run_id IS NULL AND intake_key=?) ORDER BY id",
                           (run_id, run["intake_key"])).fetchall()
     return {"events": [dict(r) for r in rows]}
+
+
+@app.get("/api/runs/{run_id}/review")
+def review(run_id: int, x_demo_code: str | None = Header(default=None)):
+    """What the reviewer changed compared with the AI's original draft."""
+    check_code(x_demo_code)
+    with connect() as db:
+        row = db.execute("SELECT ai_plan_json, plan_json FROM runs WHERE id=?", (run_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "Run not found")
+    if not row["ai_plan_json"]:
+        return {"available": False}
+    return {"available": True, "diff": diff_plans(json.loads(row["ai_plan_json"]), json.loads(row["plan_json"]))}
+
+
+@app.get("/api/stats")
+def stats(x_demo_code: str | None = Header(default=None)):
+    """How much of the AI's work survives human review, across approved plans."""
+    check_code(x_demo_code)
+    with connect() as db:
+        rows = db.execute("SELECT ai_plan_json, plan_json FROM runs WHERE status IN ('approved','sent') AND ai_plan_json IS NOT NULL").fetchall()
+        generated = db.execute("SELECT COUNT(*) AS n, AVG(latency_ms) AS ms, SUM(attempts > 1) AS repaired FROM runs WHERE ai_plan_json IS NOT NULL").fetchone()
+        failures = db.execute("SELECT COUNT(*) AS n FROM events WHERE kind='generation_failed'").fetchone()
+    summary = summarize([diff_plans(json.loads(r["ai_plan_json"]), json.loads(r["plan_json"])) for r in rows])
+    summary.update({"generated_runs": generated["n"], "avg_generation_seconds": round((generated["ms"] or 0) / 1000),
+                    "runs_needing_repair": generated["repaired"] or 0, "generation_failures": failures["n"]})
+    return summary
 
 
 @app.put("/api/runs/{run_id}/plan")

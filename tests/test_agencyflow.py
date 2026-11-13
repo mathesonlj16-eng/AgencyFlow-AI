@@ -211,6 +211,34 @@ def test_edit_can_set_deadline_add_and_remove_tasks_and_recomputes_dates(client)
     assert [t["due_date"] for t in tasks] == ["2026-11-27", "2026-11-29", "2026-12-03"]  # browser value ignored
 
 
+def test_review_diff_reports_what_the_reviewer_changed(client):
+    rid = make_run(client)["id"]
+    edited = json.loads(json.dumps(TEST_PLAN))
+    edited["deadline"] = "2026-12-04"
+    edited["tasks"][1]["priority"] = "medium"                     # edited
+    edited["tasks"].pop(2)                                         # removed "Draft captions"
+    edited["tasks"].append({"title": "Book videographer", "role": "producer", "priority": "high", "detail": "", "days_before_deadline": 6})
+    edited["missing_inputs"].append("Which dishes must appear?")
+    client.put(f"/api/runs/{rid}/plan", json=edited)
+    d = client.get(f"/api/runs/{rid}/review").json()["diff"]
+    assert d["tasks"]["kept"] == 1 and d["tasks"]["ai_count"] == 3
+    assert d["tasks"]["edited"] == [{"title": "Organize photo and video shoot", "changed": ["priority"]}]
+    assert d["tasks"]["removed"] == ["Draft captions"] and d["tasks"]["added"] == ["Book videographer"]
+    assert d["deadline"]["set_by_reviewer"] is True
+    assert d["missing_inputs"]["added"] == ["Which dishes must appear?"]
+    assert d["ai_tasks_kept_unchanged_pct"] == 33
+    client.post(f"/api/runs/{rid}/approve")
+    s = client.get("/api/stats").json()
+    assert s["approved_runs"] == 1 and s["avg_ai_tasks_kept_unchanged_pct"] == 33
+    assert s["runs_where_reviewer_set_deadline"] == 1 and s["generated_runs"] == 1
+
+
+def test_unedited_plan_shows_everything_kept(client):
+    rid = make_run(client)["id"]
+    d = client.get(f"/api/runs/{rid}/review").json()["diff"]
+    assert d["ai_tasks_kept_unchanged_pct"] == 100 and not d["tasks"]["added"] and not d["fields_changed"]
+
+
 def test_invalid_edit_is_rejected_with_readable_message(client):
     rid = make_run(client)["id"]
     bad = {**TEST_PLAN, "tasks": []}
