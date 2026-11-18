@@ -2,6 +2,10 @@
 
 **From a messy client brief to a reviewed, scheduled production plan. Tasks reach n8n only after a human approves them.**
 
+**Why it matters:** agency coordinators lose hours turning rambling client emails into task lists. AgencyFlow drafts the plan with a free local model in under 2 minutes, keeps a person in charge of every decision, and proves the tasks actually landed.
+
+`98% accuracy on tuned briefs` · `89% on held-out briefs` · `31/31 schema-valid outputs` · `39 unit + 11 live integration tests` · `runs on a 4 GB laptop GPU, no paid API`
+
 AgencyFlow AI is a small, local-first operations tool for creative and creator agencies. A coordinator pastes a client request. A local LLM drafts a structured campaign plan (deliverables, role-based tasks, client questions, risks). The coordinator corrects and approves it. The approved plan goes to an n8n workflow that validates it, blocks replays and stores the tasks in an n8n data table, with every write to an outside service disabled. The app keeps the AI's original draft, so it can show exactly what the human changed, and an evaluation script measures the model's accuracy on live runs.
 
 > Independent portfolio project using **fictional** restaurant and creator briefs. It is not a client engagement and not an official product of any agency.
